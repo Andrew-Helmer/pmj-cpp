@@ -83,33 +83,41 @@ void get_remaining_samples(const int n,
     int x_pos = sample.first * dim;
     int y_pos = sample.second * dim;
 
-    if (abs(x_balance) > abs(y_balance)) {
+    // The idea with the balance is, if we've mostly picked left cells within
+    // subquadrants, we want to pick a right cell, and vice versa, and the same
+    // for top and bottom. If we've netted 2 left cells and one top cell, we
+    // care more about picking a right cell than a bottom cell.
+    bool balance_x = abs(x_balance) > abs(y_balance);
+    if (abs(x_balance) == abs(y_balance)) {
+      // If they're equal, we randomly pick one to balance. This is better than
+      // randomly moving in one direction, because sometimes both balances
+      // equally dictate the same move.
+      balance_x = uniform_rand() < 0.5;
+    }
+    if (balance_x) {
       bool balance_to_right = x_balance < 0;
       if (x_pos ^ balance_to_right) x_pos = x_pos ^ 1;
       else
         y_pos = y_pos ^ 1;
-    } else if (abs(x_balance) < abs(y_balance)) {
+    } else {
       // The zeroth row is the "top" of the grid, so a higher number means
       // down.
       bool balance_to_down = y_balance < 0;
       if (y_pos ^ balance_to_down) y_pos = y_pos ^ 1;
       else
         x_pos = x_pos ^ 1;
-    } else {
-      if (uniform_rand() < 0.5) x_pos = x_pos ^ 1;
-      else
-        y_pos = y_pos ^ 1;
     }
 
+    (*samples)[2*n+i] = get_sample_strata(
+        x_pos, y_pos, grid_size, x_strata, y_strata);
+
+    // Update balances.
     if (x_pos & 1) x_balance++;
     else
       x_balance--;
     if (y_pos & 1) y_balance++;
     else
       y_balance--;
-
-    (*samples)[2*n+i] = get_sample_strata(
-        x_pos, y_pos, grid_size, x_strata, y_strata);
 
     // Get the one diagonally opposite to the one we just got.
     if (3*n+i >= num_samples) {

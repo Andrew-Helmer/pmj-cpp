@@ -2,122 +2,166 @@
 #include "pmj.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <iostream>
 #include <random>
 #include <utility>
 #include <vector>
 
+#include "util.h"
+
 namespace {
+// Set the strata size, loop over the samples, put them in their strata.
+void divide_strata(const int n,
+                   const std::vector<std::pair<float, float>>& samples,
+                   std::vector<bool>* x_strata,
+                   std::vector<bool>* y_strata) {
+  x_strata->resize(n*4);
+  y_strata->resize(n*4);
+  std::fill(x_strata->begin(), x_strata->end(), false);
+  std::fill(y_strata->begin(), y_strata->end(), false);
+  for (int i = 0; i < n; i++) {
+    const auto& sample = samples[i];
 
-std::default_random_engine& get_rand_gen() {
-  thread_local static std::random_device r;
-  thread_local static std::default_random_engine gen(r());
-
-  return gen;
-}
-
-float uniform_rand(float min, float max) {
-  thread_local static std::uniform_real_distribution<float> uniform;
-
-  std::uniform_real_distribution<float>::param_type param(min, max);
-
-  return uniform(get_rand_gen(), param);
-}
-float uniform_rand() {
-  return uniform_rand(0.0, 1.0);
-}
-
-std::pair<float, float> random_sample(
-    float min_x, float max_x, float min_y, float max_y) {
-  return {uniform_rand(min_x, max_x), uniform_rand(min_y, max_y)};
-}
-
-void prog_jittered_samples_quadrant(
-    const std::pair<float, float>& sample,
-    float min_x,
-    float max_x,
-    float min_y,
-    float max_y,
-    std::vector<std::pair<float, float>>* samples) {
-  const float mid_x = 0.5*(min_x + max_x);
-  const float mid_y = 0.5*(min_y + max_y);
-
-  // Get quadrant of sample.
-  bool is_left = sample.first < mid_x;
-  bool is_bottom = sample.second < mid_y;
-
-  // Generate diagonally opposite.
-  samples->push_back(random_sample(is_left ? mid_x : min_x,
-                                   is_left ? max_x : mid_x,
-                                   is_bottom ? mid_y : min_y,
-                                   is_bottom ? max_y : mid_y));
-  // Switch value.
-  if (uniform_rand() < 0.5) {
-    is_left = !is_left;
-  } else {
-    is_bottom = !is_bottom;
+    int x_strata_pos = sample.first * n * 4;
+    int y_strata_pos = sample.second * n * 4;
+    (*x_strata)[x_strata_pos] = true;
+    (*y_strata)[y_strata_pos] = true;
   }
-
-  samples->push_back(random_sample(is_left ? mid_x : min_x,
-                                   is_left ? max_x : mid_x,
-                                   is_bottom ? mid_y : min_y,
-                                   is_bottom ? max_y : mid_y));
-
-  // Switch both to do the diagonal of the last one.
-  is_bottom = !is_bottom;
-  is_left = !is_left;
-
-  samples->push_back(random_sample(is_left ? mid_x : min_x,
-                                   is_left ? max_x : mid_x,
-                                   is_bottom ? mid_y : min_y,
-                                   is_bottom ? max_y : mid_y));
 }
-}  // namespace
 
-std::vector<std::pair<float, float>> prog_jittered_samples(
-    const int num_samples) {
-  std::vector<std::pair<float, float>> samples;
-
-  // Generate first sample randomly
-  samples.push_back(random_sample(0, 1, 0, 1));
-
-  float grid_size = 1.0;
-  while (samples.size() < num_samples) {
-    std::vector<int> sample_indices(samples.size());
-    std::iota(sample_indices.begin(), sample_indices.end(), 0);
-    std::shuffle(sample_indices.begin(), sample_indices.end(), get_rand_gen());
-
-    for (const int sample_index : sample_indices) {
-      const auto& sample = samples[sample_index];
-
-      float min_x = trunc(sample.first / grid_size)*grid_size;
-      float min_y = trunc(sample.second / grid_size)*grid_size;
-
-      prog_jittered_samples_quadrant(
-          sample, min_x, min_x + grid_size, min_y, min_y + grid_size, &samples);
-
-      if (samples.size() >= num_samples) {
-        // At most we've done 3 too many.
-        samples.resize(num_samples);
-        break;
-      }
+float get_1d_strata_sample(const int pos,
+                           const float grid_size,
+                           std::vector<bool>* strata) {
+  while (true) {
+    float val = uniform_rand(pos*grid_size, (pos+1)*grid_size);
+    int strata_pos = val*strata->size();
+    if (!(*strata)[strata_pos]) {
+      (*strata)[strata_pos] = true;
+      return val;
     }
-    grid_size *= 0.5;
   }
-
-  return samples;
 }
+
+std::pair<float, float> get_sample_strata(const int x_pos,
+                                          const int y_pos,
+                                          const float grid_size,
+                                          std::vector<bool>* x_strata,
+                                          std::vector<bool>* y_strata) {
+  return {get_1d_strata_sample(x_pos, grid_size, x_strata),
+          get_1d_strata_sample(y_pos, grid_size, y_strata)};
+}
+
+std::pair<float, float> get_diag_sample_strata(const int x_pos,
+                                               const int y_pos,
+                                               const float grid_size,
+                                               std::vector<bool>* x_strata,
+                                               std::vector<bool>* y_strata) {
+  const int diag_x_pos = x_pos ^ 1;
+  const int diag_y_pos = y_pos ^ 1;
+
+  return get_sample_strata(
+      diag_x_pos, diag_y_pos, grid_size, x_strata, y_strata);
+}
+
+void get_remaining_samples(const int n,
+                           const int dim,
+                           const float grid_size,
+                           std::vector<bool>* x_strata,
+                           std::vector<bool>* y_strata,
+                           std::vector<std::pair<float, float>>* samples) {
+  const int num_samples = samples->size();
+
+  // The x_balance is negative if there are more left diagonal samples than
+  // right, and positive if there are more to the right. The y is similar but
+  // up / down.
+  int x_balance = 0;
+  int y_balance = 0;
+  for (int i = 0; i < n && 2*n+i < num_samples; i++) {
+    const auto& sample = (*samples)[i];
+
+    int x_pos = sample.first * dim;
+    int y_pos = sample.second * dim;
+
+    if (abs(x_balance) > abs(y_balance)) {
+      bool balance_to_right = x_balance < 0;
+      if (x_pos ^ balance_to_right) x_pos = x_pos ^ 1;
+      else
+        y_pos = y_pos ^ 1;
+    } else if (abs(x_balance) < abs(y_balance)) {
+      // The zeroth row is the "top" of the grid, so a higher number means
+      // down.
+      bool balance_to_down = y_balance < 0;
+      if (y_pos ^ balance_to_down) y_pos = y_pos ^ 1;
+      else
+        x_pos = x_pos ^ 1;
+    } else {
+      if (uniform_rand() < 0.5) x_pos = x_pos ^ 1;
+      else
+        y_pos = y_pos ^ 1;
+    }
+
+    if (x_pos & 1) x_balance++;
+    else
+      x_balance--;
+    if (y_pos & 1) y_balance++;
+    else
+      y_balance--;
+
+    (*samples)[2*n+i] = get_sample_strata(
+        x_pos, y_pos, grid_size, x_strata, y_strata);
+
+    // Get the one diagonally opposite to the one we just got.
+    if (3*n+i >= num_samples) {
+      continue;
+    }
+    (*samples)[3*n+i] = get_diag_sample_strata(
+        x_pos, y_pos, grid_size, x_strata, y_strata);
+  }
+}
+
+}  // namespace
 
 std::vector<std::pair<float, float>> prog_mj_samples(
     const int num_samples) {
-  std::vector<std::pair<float, float>> samples = {
-      {0.75, 0.75}, {0.25, 0.25}, {0.75, 0.25}, {0.25, 0.75}};
-  return samples;
-}
+  std::vector<std::pair<float, float>> samples(num_samples);
+  std::vector<bool> x_strata;
+  std::vector<bool> y_strata;
 
-std::vector<std::pair<float, float>> prog_mj_samples_blue_noise(
-    const int num_samples) {
-  std::vector<std::pair<float, float>> samples = {
-      {0.75, 0.75}, {0.25, 0.25}, {0.75, 0.25}, {0.25, 0.75}};
+  x_strata.reserve(num_samples);
+  y_strata.reserve(num_samples);
+
+  // Generate first sample randomly
+  samples[0] = random_sample(0, 1, 0, 1);
+
+  int n = 1;
+  int dim = 2;
+  float grid_size = 0.5;
+  while (n < num_samples) {
+    divide_strata(n, samples, &x_strata, &y_strata);
+
+    // For every sample, we generate the diagonally opposite one at the current
+    // grid level.
+    for (int i = 0; i < n && n+i < num_samples; i++) {
+      const auto& sample = samples[i];
+
+      int x_pos = sample.first * dim;
+      int y_pos = sample.second * dim;
+
+      samples[n+i] = get_diag_sample_strata(
+          x_pos, y_pos, grid_size, &x_strata, &y_strata);
+
+      if (n+i >= num_samples) {
+        break;
+      }
+    }
+
+    get_remaining_samples(n, dim, grid_size, &x_strata, &y_strata, &samples);
+
+    n *= 4;
+    dim *= 2;
+    grid_size *= 0.5;
+  }
+
   return samples;
 }

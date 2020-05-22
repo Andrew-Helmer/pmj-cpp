@@ -27,17 +27,3 @@ std::pair<float, float> random_sample(
     float min_x, float max_x, float min_y, float max_y) {
   return {uniform_rand(min_x, max_x), uniform_rand(min_y, max_y)};
 }
-
-std::pair<float, float> get_sample(
-    const int x_pos, const int y_pos, const float grid_size) {
-  return random_sample(x_pos*grid_size, (x_pos+1)*grid_size,
-                       y_pos*grid_size, (y_pos+1)*grid_size);
-}
-
-std::pair<float, float> get_diag_sample(
-    const int x_pos, const int y_pos, const float grid_size) {
-  const int diag_x_pos = x_pos ^ 1;
-  const int diag_y_pos = y_pos ^ 1;
-
-  return get_sample(diag_x_pos, diag_y_pos, grid_size);
-}

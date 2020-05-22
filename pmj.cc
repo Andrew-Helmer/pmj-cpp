@@ -10,7 +10,9 @@
 
 #include "util.h"
 
+namespace pmj {
 namespace {
+
 // Set the strata size, loop over the samples, put them in their strata.
 void divide_strata(const int n,
                    const std::vector<std::pair<float, float>>& samples,
@@ -173,3 +175,5 @@ std::vector<std::pair<float, float>> prog_mj_samples(
 
   return samples;
 }
+
+}  // namespace pmj

@@ -10,7 +10,23 @@
 
 #include "util.h"
 
+namespace pmj {
 namespace {
+
+std::pair<float, float> get_sample(
+    const int x_pos, const int y_pos, const float grid_size) {
+  return random_sample(x_pos*grid_size, (x_pos+1)*grid_size,
+                       y_pos*grid_size, (y_pos+1)*grid_size);
+}
+
+std::pair<float, float> get_diag_sample(
+    const int x_pos, const int y_pos, const float grid_size) {
+  const int diag_x_pos = x_pos ^ 1;
+  const int diag_y_pos = y_pos ^ 1;
+
+  return get_sample(diag_x_pos, diag_y_pos, grid_size);
+}
+
 void prog_jittered_samples_quadrant(
     const std::pair<float, float>& sample,
     const int n,
@@ -46,6 +62,7 @@ void prog_jittered_samples_quadrant(
 
   (*samples)[3*n+i] = get_diag_sample(new_x_pos, new_y_pos, grid_size);
 }
+
 }  // namespace
 
 std::vector<std::pair<float, float>> prog_jittered_samples(
@@ -75,3 +92,5 @@ std::vector<std::pair<float, float>> prog_jittered_samples(
 
   return samples;
 }
+
+}  // namespace pmj

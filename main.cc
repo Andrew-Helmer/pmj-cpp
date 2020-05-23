@@ -10,8 +10,9 @@
 #include "pmj.h"
 
 int main() {
-  std::unique_ptr<std::vector<pmj::Sample>> samples =
-      pmj::get_pmj_samples(256);
+  // raise(SIGSTOP);
+  std::unique_ptr<std::vector<pmj::Point>> samples =
+      pmj::get_best_candidate_pmj_samples(4096);
 
   std::cout << "[";
   for (const auto& sample : (*samples)) {

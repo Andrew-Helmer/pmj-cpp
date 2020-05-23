@@ -17,23 +17,17 @@ namespace {
 
 class SampleSet {
  public:
-  explicit SampleSet(const int num_samples) : num_samples(num_samples) {
-    samples_ = std::make_unique<std::vector<Sample>>();
+  explicit SampleSet(const int num_samples,
+                     const int num_candidates)
+                     : num_samples(num_samples),
+                       num_candidates_(num_candidates) {
+    samples_ = std::make_unique<std::vector<Point>>();
     samples_->reserve(num_samples);
     samples_->push_back({0.0, 0.0});
 
     x_strata_.reserve(num_samples);
-    x_strata_ = {false};
-
     y_strata_.reserve(num_samples);
-    y_strata_ = {false};
-
     sample_grid_.reserve(num_samples);
-    sample_grid_ = {nullptr};
-
-    n_ = 1;
-    dim_ = 1;
-    grid_size_ = 1.0;
   }
 
   // This generates a new sample at the current index, given the X position
@@ -43,13 +37,16 @@ class SampleSet {
                          const int x_pos,
                          const int y_pos);
 
+  // This function should be called after every power of 4 samples. E.g. after
+  // 1 sample, 4, 16, etc. It divides all the strata for the next pass, and
+  // figures out where the existing points lie.
   void subdivide_strata();
 
-  const Sample& sample(const int sample_index) {
+  const Point& sample(const int sample_index) {
     return (*samples_)[sample_index];
   }
-  std::unique_ptr<std::vector<Sample>> release_samples() {
-    auto samples = std::make_unique<std::vector<Sample>>();
+  std::unique_ptr<std::vector<Point>> release_samples() {
+    auto samples = std::make_unique<std::vector<Point>>();
     samples.swap(samples_);
     return samples;
   }
@@ -61,23 +58,26 @@ class SampleSet {
   const int num_samples;
 
  private:
-  void set_sample(const int i, const Sample& sample);
+  // Adds a new point at index i. Updates the necessary data structures.
+  void set_sample(const int i, const Point& sample);
 
-  float get_nearest_neighbor_dist_sq(const float x, const float y);
+  // Gets the squared distance of the nearest neighbor to the given point.
+  float get_nearest_neighbor_dist_sq(const Point& sample);
 
-  std::unique_ptr<std::vector<Sample>> samples_;
+  std::unique_ptr<std::vector<Point>> samples_;
 
-  std::vector<bool> x_strata_;
-  std::vector<bool> y_strata_;
+  std::vector<bool> x_strata_ {false};
+  std::vector<bool> y_strata_ {false};
 
   // The sample grid is used for nearest neighbor lookups.
-  std::vector<const Sample*> sample_grid_;
+  std::vector<const Point*> sample_grid_ {nullptr};
 
-  int n_;  // Number of samples in the next pass.
-  int dim_;  // Number of cells in one dimension in next pass, i.e. sqrt(n).
-  float grid_size_;  // 1.0 / dim_
+  int n_ = 1;  // Number of samples in the next pass.
+  int dim_ = 1;  // Number of cells in one dimension in next pass, i.e. sqrt(n).
+    float grid_size_ = 1.0;  // 1.0 / dim_
 
-  const int n_best_candidates_ = 20;
+  // Number of candidates to use for best-candidate sampling.
+  const int num_candidates_;
 };
 
 void SampleSet::subdivide_strata() {
@@ -87,7 +87,7 @@ void SampleSet::subdivide_strata() {
   dim_ *= 2;
   grid_size_ *= 0.5;
 
-  samples_->resize(n_);
+  samples_->resize(std::min(n_, num_samples));
 
   x_strata_.resize(n_);
   y_strata_.resize(n_);
@@ -102,8 +102,7 @@ void SampleSet::subdivide_strata() {
     x_strata_[sample.x * n_] = true;
     y_strata_[sample.y * n_] = true;
 
-    int x_pos = sample.x * dim_;
-    int y_pos = sample.y * dim_;
+    const int x_pos = sample.x * dim_, y_pos = sample.y * dim_;
     sample_grid_[y_pos*dim_ + x_pos] = &sample;
   }
 }
@@ -125,40 +124,37 @@ float get_1d_strata_sample(const int pos,
 void SampleSet::create_new_sample(const int sample_index,
                                   const int x_pos,
                                   const int y_pos) {
-  Sample max_sample;
+  Point best_candidate;
   float max_dist_sq = 0.0;
-  for (int i = 0; i < n_best_candidates_; i++) {
-    Sample cand_sample = {get_1d_strata_sample(x_pos, grid_size_, x_strata_),
-                          get_1d_strata_sample(y_pos, grid_size_, y_strata_)};
-    float dist_sq = get_nearest_neighbor_dist_sq(cand_sample.x,
-                                                 cand_sample.y);
+  for (int i = 0; i < num_candidates_; i++) {
+    Point cand_sample = {get_1d_strata_sample(x_pos, grid_size_, x_strata_),
+                         get_1d_strata_sample(y_pos, grid_size_, y_strata_)};
+    float dist_sq = get_nearest_neighbor_dist_sq(cand_sample);
     if (dist_sq > max_dist_sq) {
-      max_sample = cand_sample;
+      best_candidate = cand_sample;
       max_dist_sq = dist_sq;
     }
   }
-  set_sample(sample_index, max_sample);
+  set_sample(sample_index, best_candidate);
 }
 
 void SampleSet::set_sample(const int i,
-                           const Sample& sample) {
+                           const Point& sample) {
   (*samples_)[i] = sample;
 
   x_strata_[sample.x * n_] = true;
   y_strata_[sample.y * n_] = true;
 
-  int x_pos = sample.x * dim_;
-  int y_pos = sample.y * dim_;
+  const int x_pos = sample.x * dim_, y_pos = sample.y * dim_;
   sample_grid_[y_pos*dim_ + x_pos] = &(*samples_)[i];
 }
 
 float dist_sq(float x1, float y1, float x2, float y2) {
-  float x_diff = x2-x1;
-  float y_diff = y2-y1;
+  float x_diff = x2-x1, y_diff = y2-y1;
   return (x_diff*x_diff)+(y_diff*y_diff);
 }
 
-float SampleSet::get_nearest_neighbor_dist_sq(const float x, const float y) {
+float SampleSet::get_nearest_neighbor_dist_sq(const Point& sample) {
   // This function works by using the sample grid, since we know that the points
   // are well-distributed with at most one point in each cell. Much easier than
   // using any of the other data structures!
@@ -168,8 +164,8 @@ float SampleSet::get_nearest_neighbor_dist_sq(const float x, const float y) {
   // which is the radius of the circle contained within our squares. If the
   // nearest point falls within this radius, we know that the next outward shift
   // can't find any nearer points.
-  const int x_pos = x * dim_;
-  const int y_pos = y * dim_;
+  const int x_pos = sample.x * dim_;
+  const int y_pos = sample.y * dim_;
   float min_dist_sq = 1.0;
   for (int i = 1; i <= dim_; i++) {
     float grid_radius = grid_size_ * i;
@@ -181,25 +177,29 @@ float SampleSet::get_nearest_neighbor_dist_sq(const float x, const float y) {
     const int y_max = std::min(y_pos + i, dim_-1);
     // Traverse top and bottom boundaries, including corners.
     for (int x_offset = x_min; x_offset <= x_max; x_offset++) {
-      const Sample* top_pt = sample_grid_[y_max*dim_+x_offset];
-      const Sample* bottom_pt = sample_grid_[y_min*dim_+x_offset];
+      const Point* top_pt = sample_grid_[y_max*dim_+x_offset];
+      const Point* bottom_pt = sample_grid_[y_min*dim_+x_offset];
       if (top_pt != nullptr)
           min_dist_sq = std::min(min_dist_sq,
-                                 dist_sq(top_pt->x, top_pt->y, x, y));
+                                 dist_sq(top_pt->x, top_pt->y,
+                                         sample.x, sample.y));
       if (bottom_pt != nullptr)
           min_dist_sq = std::min(min_dist_sq,
-                                 dist_sq(bottom_pt->x, bottom_pt->y, x, y));
+                                 dist_sq(bottom_pt->x, bottom_pt->y,
+                                         sample.x, sample.y));
     }
     // Traverse left and right sides, excluding corners (hence the +1, -1).
     for (int y_offset = y_min+1; y_offset <= y_max-1; y_offset++) {
-      const Sample* left_pt = sample_grid_[y_offset*dim_+x_min];
-      const Sample* right_pt = sample_grid_[y_offset*dim_+x_max];
+      const Point* left_pt = sample_grid_[y_offset*dim_+x_min];
+      const Point* right_pt = sample_grid_[y_offset*dim_+x_max];
       if (left_pt != nullptr)
           min_dist_sq = std::min(min_dist_sq,
-                                 dist_sq(left_pt->x, left_pt->y, x, y));
+                                 dist_sq(left_pt->x, left_pt->y,
+                                         sample.x, sample.y));
       if (right_pt != nullptr)
           min_dist_sq = std::min(min_dist_sq,
-                                 dist_sq(right_pt->x, right_pt->y, x, y));
+                                 dist_sq(right_pt->x, right_pt->y,
+                                         sample.x, sample.y));
     }
 
     if (min_dist_sq < grid_radius_sq) {
@@ -210,18 +210,20 @@ float SampleSet::get_nearest_neighbor_dist_sq(const float x, const float y) {
   return min_dist_sq;
 }
 
+// Modifies x_pos and y_pos to point to a new non-diagonal (adjacent)
+// subquadrant, taking into account current balance.
 void pick_subquadrant_with_balance(const int x_balance,
                                    const int y_balance,
                                    int* x_pos,
                                    int* y_pos) {
   // The idea with the balance is, if we've mostly picked left cells within
   // subquadrants, we want to pick a right cell, and vice versa, and the same
-  // for top and bottom. If we've netted 2 left cells and one top cell, we
-  // care more about picking a right cell than a bottom cell.
+  // for top and bottom.
   //
   // In Christensen et. al, they precompute these choices for the grid, but I
   // *THINK* this greedy method works just as well? And IMO it's easier to
-  // understand.
+  // understand. Mini-proof that this should work nearly ideally at the bottom
+  // of this function.
   if (x_balance == 0 && y_balance == 0) {
     // If both are zero, we want to pick truly randomly.
     if (uniform_rand() < 0.5) *x_pos = *x_pos ^ 1;
@@ -247,50 +249,20 @@ void pick_subquadrant_with_balance(const int x_balance,
         *x_pos = *x_pos ^ 1;
     }
   }
+  /*
+   * Mini-proof that this should work well. We start with a balance of (0,0).
+   * from balance (0,0) we can move only to (1,1), (-1,-1), (1,-1), or (-1,1).
+   * For conciseness, let's say we can only move to abs(1,1). From abs(1,1), we
+   * can only move to (0,0), abs(2,0), or abs(0,2). From abs(2,0) or abs(0,2),
+   * we can only move to abs(1, 1)! So balance is bounded throughout the
+   * sampling process.
+   */
 }
 
-void get_remaining_samples(const int n,
-                           const int dim,
-                           SampleSet* sample_set) {
-  const int num_samples = sample_set->num_samples;
-
-  // The x_balance is negative if there are more left diagonal samples than
-  // right, and positive if there are more to the right. The y is similar but
-  // up / down.
-  int x_balance = 0;
-  int y_balance = 0;
-  for (int i = 0; i < n && 2*n+i < num_samples; i++) {
-    const auto& sample = sample_set->sample(i);
-
-    int x_pos = sample.x * dim;
-    int y_pos = sample.y * dim;
-
-    pick_subquadrant_with_balance(x_balance, y_balance, &x_pos, &y_pos);
-
-    sample_set->create_new_sample(2*n+i, x_pos, y_pos);
-
-    // Update balances.
-    if (x_pos & 1) x_balance++;
-    else
-      x_balance--;
-    if (y_pos & 1) y_balance++;
-    else
-      y_balance--;
-
-    // Get the one diagonally opposite to the one we just got.
-    if (3*n+i >= num_samples) {
-      continue;
-    }
-
-    sample_set->create_new_sample(3*n+i, x_pos ^ 1, y_pos ^ 1);
-  }
-}
-
-}  // namespace
-
-std::unique_ptr<std::vector<Sample>> get_pmj_samples(
-    const int num_samples) {
-  SampleSet sample_set(num_samples);
+std::unique_ptr<std::vector<Point>> get_samples(
+    const int num_samples,
+    const int num_candidates) {
+  SampleSet sample_set(num_samples, num_candidates);
 
   // Generate first sample.
   sample_set.create_new_sample(0, 0, 0);
@@ -299,8 +271,8 @@ std::unique_ptr<std::vector<Sample>> get_pmj_samples(
   while (n < num_samples) {
     sample_set.subdivide_strata();
 
-    // For every sample, we generate the diagonally opposite one at the current
-    // grid level.
+    // For every sample, we first generate the diagonally opposite one at the
+    // current grid level.
     for (int i = 0; i < n && n+i < num_samples; i++) {
       const auto& sample = sample_set.sample(i);
 
@@ -313,11 +285,52 @@ std::unique_ptr<std::vector<Sample>> get_pmj_samples(
       }
     }
 
-    get_remaining_samples(n, sample_set.dim(), &sample_set);
+  // Now we generate samples in the remaining quadrants. This is a bit trickier
+  // because we need to decide which quadrant to use, and we want to make
+  // "balanced" choices here, so we keep track of balance.
+  // The x_balance is negative if there are more left diagonal samples than
+  // right, and positive if there are more to the right. The y is similar but
+  // up / down.
+  int x_balance = 0, y_balance = 0;
+  for (int i = 0; i < n && 2*n+i < num_samples; i++) {
+    const auto& sample = sample_set.sample(i);
+
+    int x_pos = sample.x * sample_set.dim();
+    int y_pos = sample.y * sample_set.dim();
+
+    pick_subquadrant_with_balance(x_balance, y_balance, &x_pos, &y_pos);
+
+    sample_set.create_new_sample(2*n+i, x_pos, y_pos);
+
+    // Update balances.
+    if (x_pos & 1) x_balance++;
+    else
+      x_balance--;
+    if (y_pos & 1) y_balance++;
+    else
+      y_balance--;
+
+    // Get the one diagonally opposite to the one we just got.
+    if (3*n+i >= num_samples) continue;
+    sample_set.create_new_sample(3*n+i, x_pos ^ 1, y_pos ^ 1);
+  }
+
     n *= 4;
   }
 
   return sample_set.release_samples();
+}
+
+}  // namespace
+
+std::unique_ptr<std::vector<Point>> get_pmj_samples(
+    const int num_samples) {
+  return get_samples(num_samples, 1);
+}
+
+std::unique_ptr<std::vector<Point>> get_best_candidate_pmj_samples(
+    const int num_samples) {
+  return get_samples(num_samples, 10);
 }
 
 }  // namespace pmj

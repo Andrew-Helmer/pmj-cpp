@@ -8,6 +8,11 @@
 
 namespace pmj {
 
+typedef struct {
+  float x;
+  float y;
+} Point;
+
 // Get a random number generator. All of the functions in this file are
 // thread-safe.
 std::default_random_engine& get_rand_gen();

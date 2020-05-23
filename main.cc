@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 #include <random>
+#include <signal.h>
 #include <utility>
 #include <vector>
 
@@ -12,7 +13,9 @@ int main() {
   std::unique_ptr<std::vector<pmj::Sample>> samples =
       pmj::get_pmj_samples(256);
 
+  std::cout << "[";
   for (const auto& sample : (*samples)) {
-    std::cout << "(" << sample.x << ", " << sample.y << ")\n";
+    std::cout << "(" << sample.x << ", " << sample.y << "),\n";
   }
+  std::cout << "]";
 }

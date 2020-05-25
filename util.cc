@@ -8,32 +8,19 @@
 
 namespace pmj {
 
-std::default_random_engine& get_rand_gen() {
+std::default_random_engine& GetRandGen() {
   thread_local static std::random_device r;
   thread_local static std::default_random_engine gen(r());
 
   return gen;
 }
 
-float uniform_rand(float min, float max) {
-  thread_local static std::uniform_real_distribution<float> uniform;
+double UniformRand(double min, double max) {
+  thread_local static std::uniform_real_distribution<double> uniform;
 
-  std::uniform_real_distribution<float>::param_type param(min, max);
+  std::uniform_real_distribution<double>::param_type param(min, max);
 
-  float val = uniform(get_rand_gen(), param);
-  if (val == max) {
-    // It's insane that this is a compiler bug we need to handle,
-    // see notes here:
-    // https://en.cppreference.com/w/cpp/numeric/random/uniform_real_distribution
-    val = std::nextafter(val, 0.0f);
-  }
-
-  return val;
-}
-
-std::pair<float, float> random_sample(
-    float min_x, float max_x, float min_y, float max_y) {
-  return {uniform_rand(min_x, max_x), uniform_rand(min_y, max_y)};
+  return uniform(GetRandGen(), param);;
 }
 
 }  // namespace pmj

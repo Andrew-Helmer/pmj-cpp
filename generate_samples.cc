@@ -1,6 +1,6 @@
 // Copyright 2020 Andrew Helmer.
-// This simple function takes only two command-line arguments, algorithm and
-// n. Algorithm can be one of "pj", "pmj", "pmjbn", "pmj02", or "pmj02bn". By
+// This simple function takes only two command-line arguments, --algorithm and
+// --n. Algorithm can be one of "pj", "pmj", "pmjbn", "pmj02", or "pmj02bn". By
 // default it is pmj02. n must be an integer greater than zero.
 // Example usage:
 // $  make
@@ -49,10 +49,12 @@ int main(int argc, char* argv[]) {
   std::string algorithm;
   GetArguments(argc, argv, &n_samples, &algorithm);
   std::unique_ptr<std::vector<pmj::Point>> samples =
-      algorithm == "pmj" ? pmj::get_pmj_samples(n_samples) :
-      algorithm == "pmjbn" ? pmj::get_best_candidate_pmj_samples(n_samples) :
-      algorithm == "pmj02" ? pmj::get_pmj02_samples(n_samples) :
-      algorithm == "pmj02bn" ? pmj::get_best_candidate_pmj02_samples(n_samples)
+      algorithm == "pj" ? pmj::GetProgJitteredSamples(n_samples) :
+      algorithm == "pmj" ? pmj::GetProgMultiJitteredSamples(n_samples) :
+      algorithm == "pmjbn" ?
+          pmj::GetProgMultiJitteredSamplesWithBlueNoise(n_samples) :
+      algorithm == "pmj02" ? pmj::GetPMJ02Samples(n_samples) :
+      algorithm == "pmj02bn" ? pmj::GetPMJ02SamplesWithBlueNoise(n_samples)
       : throw std::invalid_argument(algorithm + " is not a valid algorithm.");
 
   std::cout << "[";

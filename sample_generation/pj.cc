@@ -21,12 +21,7 @@ Point RandomSample(
 Point GetSample(
     const int x_pos, const int y_pos, const double grid_size) {
   return RandomSample(x_pos*grid_size, (x_pos+1)*grid_size,
-                       y_pos*grid_size, (y_pos+1)*grid_size);
-}
-
-Point GetDiagSample(
-    const int x_pos, const int y_pos, const double grid_size) {
-  return GetSample(x_pos ^ 1, y_pos ^ 1, grid_size);
+                      y_pos*grid_size, (y_pos+1)*grid_size);
 }
 
 void GenPJSamplesForQuadrant(
@@ -39,7 +34,7 @@ void GenPJSamplesForQuadrant(
     const double grid_size,
     Point* samples) {
   // Generate diagonally opposite.
-  samples[n+i] = GetDiagSample(x_pos, y_pos, grid_size);
+  samples[n+i] = GetSample(x_pos ^ 1, y_pos ^ 1, grid_size);
 
   // Pick one of the two adjacent cells to generate new sample. This will go
   // much later in the sequence, so we might not do this if it's more samples
@@ -63,7 +58,7 @@ void GenPJSamplesForQuadrant(
     return;
   }
 
-  samples[3*n+i] = GetDiagSample(new_x_pos, new_y_pos, grid_size);
+  samples[3*n+i] = GetSample(new_x_pos ^ 1, new_y_pos ^ 1, grid_size);
 }
 
 }  // namespace

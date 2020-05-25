@@ -1,5 +1,5 @@
 // Copyright 2020 Andrew Helmer
-#include "pmj02.h"
+#include "sample_generation/pmj02.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include "util.h"
+#include "sample_generation/util.h"
 
 namespace pmj {
 namespace {
@@ -21,9 +21,7 @@ class SampleSet {
                      const int num_candidates)
                      : num_samples(num_samples),
                        num_candidates_(num_candidates) {
-    samples_ = std::make_unique<std::vector<Point>>();
-    samples_->reserve(num_samples);
-    samples_->push_back({0.0, 0.0});
+    samples_ = std::make_unique<Point[]>(num_samples);
 
     sample_grid_.reserve(num_samples);
   }
@@ -43,14 +41,14 @@ class SampleSet {
   void SubdivideStrata();
 
   // Get all the samples at the end.
-  std::unique_ptr<std::vector<Point>> ReleaseSamples() {
-    auto samples = std::make_unique<std::vector<Point>>();
+  std::unique_ptr<Point[]> ReleaseSamples() {
+    auto samples = std::make_unique<Point[]>(num_samples);
     samples.swap(samples_);
     return samples;
   }
 
   const Point& sample(const int sample_index) const {
-    return (*samples_)[sample_index];
+    return samples_[sample_index];
   }
   const int dim() const { return dim_; }
 
@@ -75,7 +73,7 @@ class SampleSet {
   // Gets the squared distance of the nearest neighbor to the given point.
   double GetNearestNeighborDistSq(const Point& sample) const;
 
-  std::unique_ptr<std::vector<Point>> samples_;
+  std::unique_ptr<Point[]> samples_;
 
   // Contains all strata of elementary (0,2) intervals, except for the grid
   // where the stratum width and height are the same. Each value is true/false
@@ -106,8 +104,6 @@ void SampleSet::SubdivideStrata() {
     grid_size_ *= 0.5;
   }
 
-  samples_->resize(std::min(n_, num_samples));
-
   // For the first sample this is 1x1 (no strata). For sample 2 it's 1x2 and
   // 2x1. For samples 3-4 it's 4x1 and 1x4. For samples 5-8 it's 8x1, 2x4, 4x2,
   // 1x8. So it only goes up after reaching an odd power of two.
@@ -131,7 +127,7 @@ void SampleSet::SubdivideStrata() {
   sample_grid_.resize(n_);
   std::fill(sample_grid_.begin(), sample_grid_.end(), nullptr);
   for (int i = 0; i < old_n; i++) {
-    const auto& sample = (*samples_)[i];
+    const auto& sample = samples_[i];
 
     UpdateStrata(sample);
 
@@ -143,8 +139,8 @@ void SampleSet::SubdivideStrata() {
 // This generates a sample within the grid position, verifying that it doesn't
 // overlap strata with any other sample.
 Point SampleSet::GetCandidateSample(const int x_pos,
-                                      const int y_pos,
-                                      const int partial_strata_index) const {
+                                    const int y_pos,
+                                    const int partial_strata_index) const {
   while (true) {
     Point sample = {UniformRand(x_pos*grid_size_, (x_pos+1)*grid_size_),
                     UniformRand(y_pos*grid_size_, (y_pos+1)*grid_size_)};
@@ -184,7 +180,7 @@ void SampleSet::GenerateNewSample(const int sample_index,
 }
 
 void SampleSet::UpdateStrata(const Point& sample,
-                           const int partial_strata_index) {
+                             const int partial_strata_index) {
   for (int i = 0, dim_x = n_, dim_y = 1;
        dim_x >= 1;
        dim_x /= 2, dim_y *= 2, i++) {
@@ -215,7 +211,7 @@ void SampleSet::UpdateStrata(const Point& sample,
 }
 
 bool SampleSet::IsStrataOccupied(const Point& sample,
-                                   const int partial_strata_index) const {
+                                 const int partial_strata_index) const {
   for (int i = 0, dim_x = n_, dim_y = 1;
        dim_x >= 1;
        dim_x /= 2, dim_y *= 2, i++) {
@@ -249,13 +245,13 @@ bool SampleSet::IsStrataOccupied(const Point& sample,
 }
 
 void SampleSet::AddSample(const int i,
-                           const Point& sample) {
-  (*samples_)[i] = sample;
+                          const Point& sample) {
+  samples_[i] = sample;
 
   UpdateStrata(sample, get_partial_strata_index(i));
 
   const int x_pos = sample.x * dim_, y_pos = sample.y * dim_;
-  sample_grid_[y_pos*dim_ + x_pos] = &(*samples_)[i];
+  sample_grid_[y_pos*dim_ + x_pos] = &(samples_[i]);
 }
 
 double dist_sq(double x1, double y1, double x2, double y2) {
@@ -334,30 +330,7 @@ void SampleSet::PickSubquadrantWithBalance(const int sample_index,
                      UniformRand(y_pos2*grid_size_, (y_pos2+1)*grid_size_)};
     if (!IsStrataOccupied(sample1, partial_strata_index)) {
       if (!IsStrataOccupied(sample2, partial_strata_index)) {
-        // In this case we actually get candidate samples from both, and pick
-        // the best based off that.
-        double max_dist_sq = 0.0;
-
         bool use_subquad_1 = UniformRand() < 0.5;
-        for (int i = 0; i < num_candidates_; i++) {
-          Point cand_sample1 =
-              {UniformRand(x_pos1*grid_size_, (x_pos1+1)*grid_size_),
-               UniformRand(y_pos1*grid_size_, (y_pos1+1)*grid_size_)};
-          Point cand_sample2 =
-              {UniformRand(x_pos2*grid_size_, (x_pos2+1)*grid_size_),
-              UniformRand(y_pos2*grid_size_, (y_pos2+1)*grid_size_)};
-          double dist_sq1 = GetNearestNeighborDistSq(cand_sample1);
-          double dist_sq2 = GetNearestNeighborDistSq(cand_sample2);
-          if (dist_sq1 > max_dist_sq) {
-            max_dist_sq = dist_sq1;
-            use_subquad_1 = true;
-          }
-          if (dist_sq2 > max_dist_sq) {
-            max_dist_sq = dist_sq2;
-            use_subquad_1 = false;
-          }
-        }
-
         if (use_subquad_1) {
           *x_pos = x_pos1;
           *y_pos = y_pos1;
@@ -378,7 +351,7 @@ void SampleSet::PickSubquadrantWithBalance(const int sample_index,
   }
 }
 
-std::unique_ptr<std::vector<Point>> GenerateSamples(
+std::unique_ptr<Point[]> GenerateSamples(
     const int num_samples,
     const int num_candidates) {
   SampleSet sample_set(num_samples, num_candidates);
@@ -436,12 +409,12 @@ std::unique_ptr<std::vector<Point>> GenerateSamples(
 
 }  // namespace
 
-std::unique_ptr<std::vector<Point>> GetPMJ02Samples(
+std::unique_ptr<Point[]> GetPMJ02Samples(
     const int num_samples) {
   return GenerateSamples(num_samples, 1);
 }
 
-std::unique_ptr<std::vector<Point>> GetPMJ02SamplesWithBlueNoise(
+std::unique_ptr<Point[]> GetPMJ02SamplesWithBlueNoise(
     const int num_samples) {
   return GenerateSamples(num_samples, 10);
 }

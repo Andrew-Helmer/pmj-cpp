@@ -1,6 +1,6 @@
 // Copyright 2020 Andrew Helmer
-#ifndef UTIL_H_
-#define UTIL_H_
+#ifndef SAMPLE_GENERATION_UTIL_H_
+#define SAMPLE_GENERATION_UTIL_H_
 
 #include <random>
 #include <utility>
@@ -22,4 +22,4 @@ double UniformRand(double min = 0.0, double max = 1.0);
 
 }  // namespace pmj
 
-#endif  // UTIL_H_
+#endif  // SAMPLE_GENERATION_UTIL_H_

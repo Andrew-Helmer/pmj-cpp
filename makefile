@@ -1,8 +1,10 @@
-CXXFLAGS = -Wall -std=c++17
+INC_DIR = sample_generation
+CXXFLAGS = -Wall -std=c++17 -I$(INC_DIR)/..
+SAMPLE_GENERATION_SRCS = $(wildcard sample_generation/*.cc)
 
 all: generate_samples
 
-release: CXXFLAGS += -g3
+release: CXXFLAGS += -O3
 release: generate_samples
 
 DEBUG: debug
@@ -10,8 +12,8 @@ DEBUG: debug
 debug: CXXFLAGS += -DDEBUG -g
 debug: generate_samples
 
-generate_samples: generate_samples.cc pj.cc pmj.cc pmj02.cc util.cc
-	g++ $(CXXFLAGS) -o generate_samples generate_samples.cc pj.cc pmj.cc pmj02.cc util.cc -I
+generate_samples: generate_samples.cc $(SAMPLE_GENERATION_SRCS)
+	g++ $(CXXFLAGS) -o generate_samples generate_samples.cc $(SAMPLE_GENERATION_SRCS)
 
 clean:
 	rm -Rf generate_samples generate_samples.dSYM

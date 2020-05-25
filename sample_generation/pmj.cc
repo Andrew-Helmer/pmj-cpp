@@ -1,5 +1,5 @@
 // Copyright 2020 Andrew Helmer
-#include "pmj.h"
+#include "sample_generation/pmj.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include "util.h"
+#include "sample_generation/util.h"
 
 namespace pmj {
 namespace {
@@ -21,13 +21,12 @@ class SampleSet {
                      const int num_candidates)
                      : num_samples(num_samples),
                        num_candidates_(num_candidates) {
-    samples_ = std::make_unique<std::vector<Point>>();
-    samples_->reserve(num_samples);
-    samples_->push_back({0.0, 0.0});
+    samples_ = std::make_unique<Point[]>(num_samples);
 
-    x_strata_.reserve(num_samples);
-    y_strata_.reserve(num_samples);
-    sample_grid_.reserve(num_samples);
+    x_strata_.resize(num_samples);
+    y_strata_.resize(num_samples);
+
+    sample_grid_ = std::make_unique<const Point*[]>(num_samples);
   }
 
   // This generates a new sample at the current index, given the X position
@@ -41,14 +40,14 @@ class SampleSet {
   void SubdivideStrata();
 
   // Get all the samples at the end.
-  std::unique_ptr<std::vector<Point>> ReleaseSamples() {
-    auto samples = std::make_unique<std::vector<Point>>();
+  std::unique_ptr<Point[]> ReleaseSamples() {
+    auto samples = std::make_unique<Point[]>(num_samples);
     samples.swap(samples_);
     return samples;
   }
 
   const Point& sample(const int sample_index) const {
-    return (*samples_)[sample_index];
+    return samples_[sample_index];
   }
   const int dim() const { return dim_; }
 
@@ -61,13 +60,14 @@ class SampleSet {
   // Gets the squared distance of the nearest neighbor to the given point.
   double GetNearestNeighborDistSq(const Point& sample) const;
 
-  std::unique_ptr<std::vector<Point>> samples_;
+  std::unique_ptr<Point[]> samples_;
 
+  // Vector bool is usually implemented as a bitset!
   std::vector<bool> x_strata_ {false};
   std::vector<bool> y_strata_ {false};
 
   // The sample grid is used for nearest neighbor lookups.
-  std::vector<const Point*> sample_grid_ {nullptr};
+  std::unique_ptr<const Point*[]> sample_grid_;
 
   int n_ = 1;  // Number of samples in the next pass.
   bool is_power_of_4_ = true;  // Whether n is a power of 4.
@@ -88,18 +88,11 @@ void SampleSet::SubdivideStrata() {
     grid_size_ *= 0.5;
   }
 
-  samples_->resize(std::min(n_, num_samples));
-
-  x_strata_.resize(n_);
-  y_strata_.resize(n_);
-  if (!is_power_of_4_)
-    sample_grid_.resize(n_*2);
-
-  std::fill(sample_grid_.begin(), sample_grid_.end(), nullptr);
-  std::fill(x_strata_.begin(), x_strata_.end(), false);
-  std::fill(y_strata_.begin(), y_strata_.end(), false);
+  std::fill_n(sample_grid_.get(), old_n, nullptr);
+  std::fill_n(x_strata_.begin(), old_n, 0);
+  std::fill_n(y_strata_.begin(), old_n, 0);
   for (int i = 0; i < old_n; i++) {
-    const auto& sample = (*samples_)[i];
+    const auto& sample = samples_[i];
 
     x_strata_[sample.x * n_] = true;
     y_strata_[sample.y * n_] = true;
@@ -141,14 +134,14 @@ void SampleSet::GenerateNewSample(const int sample_index,
 }
 
 void SampleSet::AddSample(const int i,
-                           const Point& sample) {
-  (*samples_)[i] = sample;
+                          const Point& sample) {
+  samples_[i] = sample;
 
   x_strata_[sample.x * n_] = true;
   y_strata_[sample.y * n_] = true;
 
   const int x_pos = sample.x * dim_, y_pos = sample.y * dim_;
-  sample_grid_[y_pos*dim_ + x_pos] = &(*samples_)[i];
+  sample_grid_[y_pos*dim_ + x_pos] = &(samples_[i]);
 }
 
 double dist_sq(double x1, double y1, double x2, double y2) {
@@ -261,7 +254,7 @@ void PickSubquadrantWithBalance(const int x_balance,
    */
 }
 
-std::unique_ptr<std::vector<Point>> GenerateSamples(
+std::unique_ptr<Point[]> GenerateSamples(
     const int num_samples,
     const int num_candidates) {
   SampleSet sample_set(num_samples, num_candidates);
@@ -333,12 +326,12 @@ std::unique_ptr<std::vector<Point>> GenerateSamples(
 
 }  // namespace
 
-std::unique_ptr<std::vector<Point>> GetProgMultiJitteredSamples(
+std::unique_ptr<Point[]> GetProgMultiJitteredSamples(
     const int num_samples) {
   return GenerateSamples(num_samples, 1);
 }
 
-std::unique_ptr<std::vector<Point>> GetProgMultiJitteredSamplesWithBlueNoise(
+std::unique_ptr<Point[]> GetProgMultiJitteredSamplesWithBlueNoise(
     const int num_samples) {
   return GenerateSamples(num_samples, 10);
 }

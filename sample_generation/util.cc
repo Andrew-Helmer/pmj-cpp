@@ -1,5 +1,5 @@
 // Copyright 2020 Andrew Helmer
-#include "util.h"
+#include "sample_generation/util.h"
 
 #include <random>
 #include <signal.h>

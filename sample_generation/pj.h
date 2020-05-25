@@ -1,20 +1,21 @@
 // Copyright 2020 Andrew Helmer
-#ifndef PJ_H_
-#define PJ_H_
+#ifndef SAMPLE_GENERATION_PJ_H_
+#define SAMPLE_GENERATION_PJ_H_
 
+#include <array>
 #include <memory>
 #include <utility>
 #include <vector>
 
-#include "util.h"
+#include "sample_generation/util.h"
 
 namespace pmj {
 
 // Progressive jittered samples shouldn't really be used, it's more just a
 // learning example.
-std::unique_ptr<std::vector<Point>> GetProgJitteredSamples(
+std::unique_ptr<Point[]> GetProgJitteredSamples(
     const int num_samples);
 
 }  // namespace pmj
 
-#endif  // PJ_H_
+#endif  // SAMPLE_GENERATION_PJ_H_

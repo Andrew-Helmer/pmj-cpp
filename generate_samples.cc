@@ -5,15 +5,15 @@
 // Example usage:
 // $  make
 // $  ./generate_samples --algorithm='pmj02bn' --n=4096
+#include <array>
 #include <iostream>
 #include <memory>
 #include <random>
 #include <utility>
-#include <vector>
 
-#include "pj.h"
-#include "pmj.h"
-#include "pmj02.h"
+#include "sample_generation/pj.h"
+#include "sample_generation/pmj.h"
+#include "sample_generation/pmj02.h"
 
 namespace {
   void GetArguments(const int argc,
@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
   int n_samples;
   std::string algorithm;
   GetArguments(argc, argv, &n_samples, &algorithm);
-  std::unique_ptr<std::vector<pmj::Point>> samples =
+  std::unique_ptr<pmj::Point[]> samples =
       algorithm == "pj" ? pmj::GetProgJitteredSamples(n_samples) :
       algorithm == "pmj" ? pmj::GetProgMultiJitteredSamples(n_samples) :
       algorithm == "pmjbn" ?
@@ -58,7 +58,8 @@ int main(int argc, char* argv[]) {
       : throw std::invalid_argument(algorithm + " is not a valid algorithm.");
 
   std::cout << "[";
-  for (const auto& sample : (*samples)) {
+  for (int i = 0; i < n_samples; i++) {
+    const auto& sample = samples[i];
     std::cout << "(" << sample.x << ", " << sample.y << "),\n";
   }
   std::cout << "]";

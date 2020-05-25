@@ -1,17 +1,17 @@
 CXXFLAGS = -Wall -std=c++17
 
-all: pmj
+all: generate_samples
 
 release: CXXFLAGS += -g3
-release: pmj
+release: generate_samples
 
 DEBUG: debug
 
 debug: CXXFLAGS += -DDEBUG -g
-debug: pmj
+debug: generate_samples
 
-pmj: main.cc pj.cc pmj.cc util.cc
-	g++ $(CXXFLAGS) -o pmj main.cc pj.cc pmj.cc util.cc -I
+generate_samples: generate_samples.cc pj.cc pmj.cc pmj02.cc util.cc
+	g++ $(CXXFLAGS) -o generate_samples generate_samples.cc pj.cc pmj.cc pmj02.cc util.cc -I
 
 clean:
-	rm -Rf pmj pmj.dSYM
+	rm -Rf generate_samples generate_samples.dSYM

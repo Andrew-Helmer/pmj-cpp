@@ -1,5 +1,5 @@
 // Copyright 2020 Andrew Helmer
-#include "pmj.h"
+#include "pmj02.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -25,10 +25,12 @@ class SampleSet {
     samples_->reserve(num_samples);
     samples_->push_back({0.0, 0.0});
 
-    x_strata_.reserve(num_samples);
-    y_strata_.reserve(num_samples);
     sample_grid_.reserve(num_samples);
   }
+
+  void pick_subquadrant_with_balance(const int sample_index,
+                                     int* x_pos,
+                                     int* y_pos);
 
   // This generates a new sample at the current index, given the X position
   // and Y position of the subquadrant. It won't generate a new sample in an
@@ -42,7 +44,7 @@ class SampleSet {
   // figures out where the existing points lie.
   void subdivide_strata();
 
-  void subdivide_strata_1d();
+  void subdivide_strata_2x();
 
   // Get all the samples at the end.
   std::unique_ptr<std::vector<Point>> release_samples() {
@@ -54,7 +56,6 @@ class SampleSet {
   const Point& sample(const int sample_index) const {
     return (*samples_)[sample_index];
   }
-  const int n() const { return n_; }
   const int dim() const { return dim_; }
   const float grid_size() const { return grid_size_; }
 
@@ -64,13 +65,29 @@ class SampleSet {
   // Adds a new point at index i. Updates the necessary data structures.
   void set_sample(const int i, const Point& sample);
 
+  // Given a sample, sets all the correct strata to true.
+  void set_strata(const Point& sample, const int partial_strata_index = -1);
+
+  Point get_candidate_sample(const int x_pos,
+                             const int y_pos,
+                             const int partial_strata_index = -1) const;
+
+  bool is_strata_occupied(const Point& sample,
+                          const int partial_strata_index = -1) const;
+
+  int get_partial_strata_index(const int sample_index) const;
+
   // Gets the squared distance of the nearest neighbor to the given point.
   float get_nearest_neighbor_dist_sq(const Point& sample) const;
 
   std::unique_ptr<std::vector<Point>> samples_;
 
-  std::vector<bool> x_strata_ {false};
-  std::vector<bool> y_strata_ {false};
+  // Contains all strata of elementary (0,2) intervals, except for the grid
+  // where the stratum width and height are the same. Each value is true/false
+  // for if a sample resides there.
+  std::vector<std::vector<bool>> strata_ {};
+  // This is the same as above, but it's only used for odd powers of two.
+  std::vector<std::vector<bool>> partial_strata_[2] {};
 
   // The sample grid is used for nearest neighbor lookups.
   std::vector<const Point*> sample_grid_ {nullptr};
@@ -86,56 +103,79 @@ class SampleSet {
 void SampleSet::subdivide_strata() {
   const float old_n = n_;
 
-  n_ *= 4;
+  n_ *= 2;
   dim_ *= 2;
   grid_size_ *= 0.5;
 
   samples_->resize(std::min(n_, num_samples));
 
-  x_strata_.resize(n_);
-  y_strata_.resize(n_);
-  sample_grid_.resize(n_);
+  // For the first sample this is 1x1 (no strata). For sample 2 it's 1x2 and
+  // 2x1. For samples 3-4 it's 4x1 and 1x4. For samples 5-8 it's 8x1, 2x4, 4x2,
+  // 1x8. So it only goes up after reaching a power of 4.
+  strata_.resize(strata_.size()+2);
+  std::fill(strata_.begin(), strata_.end(), std::vector<bool>(n_, false));
 
+  sample_grid_.resize(n_);
   std::fill(sample_grid_.begin(), sample_grid_.end(), nullptr);
-  std::fill(x_strata_.begin(), x_strata_.end(), false);
-  std::fill(y_strata_.begin(), y_strata_.end(), false);
   for (int i = 0; i < old_n; i++) {
     const auto& sample = (*samples_)[i];
 
-    x_strata_[sample.x * n_] = true;
-    y_strata_[sample.y * n_] = true;
+    set_strata(sample);
 
     const int x_pos = sample.x * dim_, y_pos = sample.y * dim_;
     sample_grid_[y_pos*dim_ + x_pos] = &sample;
   }
 }
 
-void SampleSet::subdivide_strata_1d() {
-  x_strata_.resize(n_*2);
-  y_strata_.resize(n_*2);
+void SampleSet::subdivide_strata_2x() {
+  const int old_n = n_;
+  n_ *= 2;
 
-  std::fill(x_strata_.begin(), x_strata_.end(), false);
-  std::fill(y_strata_.begin(), y_strata_.end(), false);
-  for (int i = 0; i < n_; i++) {
+  samples_->resize(std::min(n_, num_samples));
+
+  // The number of strata doesn't change, but the size of each strata does.
+  // For instance, it might go from 1x2 to 2x4.
+  std::fill(strata_.begin(), strata_.end(), std::vector<bool>(n_, false));
+
+  // For 3-4 samples, the partial strata are 2x1 and 1x2. For 9-16, they are
+  // 4x1 and 1x4. For 33-64, they are 16x1, 8x2, 2x8, 4x4.
+  for (int i = 0; i < 2; i++) {
+    partial_strata_[i].resize(partial_strata_[i].size()+2);
+    std::fill(partial_strata_[i].begin(),
+              partial_strata_[i].end(),
+              std::vector<bool>(n_/2, false));
+  }
+
+  for (int i = 0; i < old_n; i++) {
     const auto& sample = (*samples_)[i];
 
-    x_strata_[sample.x * n_ * 2] = true;
-    y_strata_[sample.y * n_ * 2] = true;
+    set_strata(sample);
   }
 }
 
 // This generates a sample within the grid position, verifying that it doesn't
 // overlap strata with any other sample.
-float get_1d_strata_sample(const int pos,
-                           const float grid_size,
-                           const std::vector<bool>& strata) {
+Point SampleSet::get_candidate_sample(const int x_pos,
+                                      const int y_pos,
+                                      const int partial_strata_index) const {
   while (true) {
-    float val = uniform_rand(pos*grid_size, (pos+1)*grid_size);
-    int strata_pos = val*strata.size();
-    if (!strata[strata_pos]) {
-      return val;
+    Point sample = {uniform_rand(x_pos*grid_size_, (x_pos+1)*grid_size_),
+                    uniform_rand(y_pos*grid_size_, (y_pos+1)*grid_size_)};
+    if (!is_strata_occupied(sample, partial_strata_index)) {
+      return sample;
     }
   }
+}
+
+int SampleSet::get_partial_strata_index(const int sample_index) const {
+  // We use this to determine whether we're in an even or odd power of 2. Of
+  // course there are other ways to do this.
+  const int n_total = dim_*dim_;
+  return sample_index < (n_total/2)
+      ? -1
+      : ((sample_index - n_total/2) < (n_total/2)
+          ? 0
+          : 1);
 }
 
 void SampleSet::create_new_sample(const int sample_index,
@@ -143,9 +183,10 @@ void SampleSet::create_new_sample(const int sample_index,
                                   const int y_pos) {
   Point best_candidate;
   float max_dist_sq = 0.0;
+
   for (int i = 0; i < num_candidates_; i++) {
-    Point cand_sample = {get_1d_strata_sample(x_pos, grid_size_, x_strata_),
-                         get_1d_strata_sample(y_pos, grid_size_, y_strata_)};
+    Point cand_sample = get_candidate_sample(
+        x_pos, y_pos, get_partial_strata_index(sample_index));
     float dist_sq = get_nearest_neighbor_dist_sq(cand_sample);
     if (dist_sq > max_dist_sq) {
       best_candidate = cand_sample;
@@ -155,12 +196,76 @@ void SampleSet::create_new_sample(const int sample_index,
   set_sample(sample_index, best_candidate);
 }
 
+void SampleSet::set_strata(const Point& sample,
+                           const int partial_strata_index) {
+  for (int i = 0, dim_x = n_, dim_y = 1;
+       dim_x >= 1;
+       dim_x /= 2, dim_y *= 2, i++) {
+    if (dim_x == dim_y) {
+      i--;
+      continue;
+    }
+    int x_pos = sample.x * dim_x;
+    int y_pos = sample.y * dim_y;
+    strata_[i][y_pos*dim_x + x_pos] = true;
+  }
+
+  // Only difference from above is n/2, and partial_strata_.
+  if (partial_strata_index >= 0) {
+    for (int i = 0, dim_x = n_ / 2, dim_y = 1;
+         dim_x >= 1;
+         dim_x /= 2, dim_y *= 2, i++) {
+      if (dim_x == dim_y) {
+        i--;
+        continue;
+      }
+      int x_pos = sample.x * dim_x;
+      int y_pos = sample.y * dim_y;
+
+      partial_strata_[partial_strata_index][i][y_pos*dim_x + x_pos] = true;
+    }
+  }
+}
+
+bool SampleSet::is_strata_occupied(const Point& sample,
+                                   const int partial_strata_index) const {
+  for (int i = 0, dim_x = n_, dim_y = 1;
+       dim_x >= 1;
+       dim_x /= 2, dim_y *= 2, i++) {
+    if (dim_x == dim_y) {
+      i--;
+      continue;
+    }
+    int x_pos = sample.x * dim_x;
+    int y_pos = sample.y * dim_y;
+
+    if (strata_[i][y_pos*dim_x + x_pos]) return true;
+  }
+
+  // Only difference from above is n/2, and partial_strata_.
+  if (partial_strata_index >= 0) {
+      for (int i = 0, dim_x = n_ / 2, dim_y = 1;
+           dim_x >= 1;
+           dim_x /= 2, dim_y *= 2, i++) {
+        if (dim_x == dim_y) {
+          i--;
+          continue;
+        }
+        int x_pos = sample.x * dim_x;
+        int y_pos = sample.y * dim_y;
+
+        if (partial_strata_[partial_strata_index][i][y_pos*dim_x + x_pos])
+          return true;
+      }
+  }
+  return false;
+}
+
 void SampleSet::set_sample(const int i,
                            const Point& sample) {
   (*samples_)[i] = sample;
 
-  x_strata_[sample.x * n_] = true;
-  y_strata_[sample.y * n_] = true;
+  set_strata(sample, get_partial_strata_index(i));
 
   const int x_pos = sample.x * dim_, y_pos = sample.y * dim_;
   sample_grid_[y_pos*dim_ + x_pos] = &(*samples_)[i];
@@ -229,51 +334,59 @@ float SampleSet::get_nearest_neighbor_dist_sq(const Point& sample) const {
 
 // Modifies x_pos and y_pos to point to a new non-diagonal (adjacent)
 // subquadrant, taking into account current balance.
-void pick_subquadrant_with_balance(const int x_balance,
-                                   const int y_balance,
-                                   int* x_pos,
-                                   int* y_pos) {
-  // The idea with the balance is, if we've mostly picked left cells within
-  // subquadrants, we want to pick a right cell, and vice versa, and the same
-  // for top and bottom.
-  //
-  // In Christensen et. al, they precompute these choices for the grid, but I
-  // *THINK* this greedy method works just as well? And IMO it's easier to
-  // understand. Mini-proof that this should work nearly ideally at the bottom
-  // of this function.
-  if (x_balance == 0 && y_balance == 0) {
-    // If both are zero, we want to pick truly randomly.
-    if (uniform_rand() < 0.5) *x_pos = *x_pos ^ 1;
-    else
-      *y_pos = *y_pos ^ 1;
-  } else {
-    bool use_x_balance = abs(x_balance) > abs(y_balance);
-    if (abs(x_balance) == abs(y_balance)) {
-      // If they're equal, we randomly pick one to balance. This is better
-      // than randomly moving in one direction, because sometimes both
-      // balances equally dictate the same move.
-      use_x_balance = uniform_rand() < 0.5;
-    }
-    if (use_x_balance) {
-      bool balance_to_right = x_balance < 0;
-      if ((*x_pos & 1) != balance_to_right) *x_pos = *x_pos ^ 1;
-      else
-        *y_pos = *y_pos ^ 1;
-    } else {
-      bool balance_to_up = y_balance < 0;
-      if ((*y_pos & 1) != balance_to_up) *y_pos = *y_pos ^ 1;
-      else
-        *x_pos = *x_pos ^ 1;
+void SampleSet::pick_subquadrant_with_balance(const int sample_index,
+                                              int* x_pos,
+                                              int* y_pos) {
+  const int partial_strata_index = get_partial_strata_index(sample_index);
+  int x_pos1 = *x_pos ^ 1, y_pos1 = *y_pos;
+  int x_pos2 = *x_pos , y_pos2 = *y_pos ^ 1;
+  while (true) {
+    Point sample1 = {uniform_rand(x_pos1*grid_size_, (x_pos1+1)*grid_size_),
+                     uniform_rand(y_pos1*grid_size_, (y_pos1+1)*grid_size_)};
+    Point sample2 = {uniform_rand(x_pos2*grid_size_, (x_pos2+1)*grid_size_),
+                     uniform_rand(y_pos2*grid_size_, (y_pos2+1)*grid_size_)};
+    if (!is_strata_occupied(sample1, partial_strata_index)) {
+      if (!is_strata_occupied(sample2, partial_strata_index)) {
+        // In this case we actually get candidate samples from both, and pick
+        // the best based off that.
+        float max_dist_sq = 0.0;
+
+        bool use_subquad_1 = uniform_rand() < 0.5;
+        for (int i = 0; i < num_candidates_; i++) {
+          Point cand_sample1 = {uniform_rand(x_pos1*grid_size_, (x_pos1+1)*grid_size_),
+                     uniform_rand(y_pos1*grid_size_, (y_pos1+1)*grid_size_)};
+          Point cand_sample2 = {uniform_rand(x_pos2*grid_size_, (x_pos2+1)*grid_size_),
+                           uniform_rand(y_pos2*grid_size_, (y_pos2+1)*grid_size_)};
+          float dist_sq1 = get_nearest_neighbor_dist_sq(cand_sample1);
+          float dist_sq2 = get_nearest_neighbor_dist_sq(cand_sample2);
+          if (dist_sq1 > max_dist_sq) {
+            max_dist_sq = dist_sq1;
+            use_subquad_1 = true;
+          }
+          if (dist_sq2 > max_dist_sq) {
+            max_dist_sq = dist_sq2;
+            use_subquad_1 = false;
+          }
+        }
+
+        if (use_subquad_1) {
+          *x_pos = x_pos1;
+          *y_pos = y_pos1;
+        } else {
+          *x_pos = x_pos2;
+          *y_pos = y_pos2;
+        }
+        return;
+      }
+      *x_pos = x_pos1;
+      *y_pos = y_pos1;
+      return;
+    } else if (!is_strata_occupied(sample2, partial_strata_index)) {
+      *x_pos = x_pos2;
+      *y_pos = y_pos2;
+      return;
     }
   }
-  /*
-   * Mini-proof that this should work well. We start with a balance of (0,0).
-   * from balance (0,0) we can move only to (1,1), (-1,-1), (1,-1), or (-1,1).
-   * For conciseness, let's say we can only move to abs(1,1). From abs(1,1), we
-   * can only move to (0,0), abs(2,0), or abs(0,2). From abs(2,0) or abs(0,2),
-   * we can only move to abs(1, 1)! So balance is bounded throughout the
-   * sampling process.
-   */
 }
 
 std::unique_ptr<std::vector<Point>> get_samples(
@@ -284,7 +397,7 @@ std::unique_ptr<std::vector<Point>> get_samples(
   // Generate first sample.
   sample_set.create_new_sample(0, 0, 0);
 
-  int n = 1;
+  int n = 1;  // This n is not the same as the one in SampleSet!!
   while (n < num_samples) {
     sample_set.subdivide_strata();
 
@@ -302,30 +415,16 @@ std::unique_ptr<std::vector<Point>> get_samples(
       }
     }
 
-    sample_set.subdivide_strata_1d();
-    // Now we generate samples in the remaining quadrants. This is a bit
-    // trickier because we need to decide which quadrant to use, and we want to
-    // make "balanced" choices here, so we keep track of balance. The x_balance
-    // is negative if there are more left diagonal samples than right, and
-    // positive if there are more to the right. The y is similar but up / down.
-    int x_balance = 0, y_balance = 0;
+    sample_set.subdivide_strata_2x();
     for (int i = 0; i < n && 2*n+i < num_samples; i++) {
       const auto& sample = sample_set.sample(i);
 
       int x_pos = sample.x * sample_set.dim();
       int y_pos = sample.y * sample_set.dim();
 
-      pick_subquadrant_with_balance(x_balance, y_balance, &x_pos, &y_pos);
+      sample_set.pick_subquadrant_with_balance(2*n+i, &x_pos, &y_pos);
 
       sample_set.create_new_sample(2*n+i, x_pos, y_pos);
-
-      // Update balances.
-      if (x_pos & 1) x_balance++;
-      else
-        x_balance--;
-      if (y_pos & 1) y_balance++;
-      else
-        y_balance--;
 
       // Get the one diagonally opposite to the one we just got.
       if (3*n+i >= num_samples) continue;
@@ -340,12 +439,12 @@ std::unique_ptr<std::vector<Point>> get_samples(
 
 }  // namespace
 
-std::unique_ptr<std::vector<Point>> get_pmj_samples(
+std::unique_ptr<std::vector<Point>> get_pmj02_samples(
     const int num_samples) {
   return get_samples(num_samples, 1);
 }
 
-std::unique_ptr<std::vector<Point>> get_best_candidate_pmj_samples(
+std::unique_ptr<std::vector<Point>> get_best_candidate_pmj02_samples(
     const int num_samples) {
   return get_samples(num_samples, 10);
 }

@@ -17,11 +17,8 @@ typedef struct {
 // thread-safe.
 std::default_random_engine& get_rand_gen();
 
-// Gets a random float from 0.0 to 1.0. Based on uniform_real_distribution.
-float uniform_rand();
-
 // Gets a random float between any two numbers.
-float uniform_rand(float min, float max);
+float uniform_rand(float min = 0.0, float max = 1.0);
 
 // Gets a 2D random value, based off uniform_real_distribution.
 std::pair<float, float> random_sample(

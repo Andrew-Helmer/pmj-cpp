@@ -30,9 +30,6 @@ float uniform_rand(float min, float max) {
 
   return val;
 }
-float uniform_rand() {
-  return uniform_rand(0.0, 1.0);
-}
 
 std::pair<float, float> random_sample(
     float min_x, float max_x, float min_y, float max_y) {

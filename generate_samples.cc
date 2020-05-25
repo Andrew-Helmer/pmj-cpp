@@ -2,9 +2,13 @@
 // This simple function takes only two command-line arguments, --algorithm and
 // --n. Algorithm can be one of "pj", "pmj", "pmjbn", "pmj02", or "pmj02bn". By
 // default it is pmj02. n must be an integer greater than zero.
-// Example usage:
-// $  make
+// Example usage with make:
+// $  make release
 // $  ./generate_samples --algorithm='pmj02bn' --n=4096
+//
+// Example usage with bazel:
+// $  bazel build -c opt :all
+// $  ./bazel-bin/generate_samples --algorithm='pmj02bn' --n=4096
 #include <array>
 #include <iostream>
 #include <memory>

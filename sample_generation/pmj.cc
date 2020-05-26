@@ -25,7 +25,10 @@ class SampleSet {
     x_strata_.resize(num_samples);
     y_strata_.resize(num_samples);
 
-    sample_grid_ = std::make_unique<const Point*[]>(num_samples);
+    int grid_memory_size = 1;
+    while (grid_memory_size < num_samples)
+      grid_memory_size <<= 2;
+    sample_grid_ = std::make_unique<const Point*[]>(grid_memory_size);
   }
 
   // This generates a new sample at the current index, given the X position
@@ -87,9 +90,9 @@ void SampleSet::SubdivideStrata() {
     grid_size_ *= 0.5;
   }
 
-  std::fill_n(sample_grid_.get(), old_n, nullptr);
-  std::fill_n(x_strata_.begin(), old_n, 0);
-  std::fill_n(y_strata_.begin(), old_n, 0);
+  std::fill_n(sample_grid_.get(), n_, nullptr);
+  std::fill_n(x_strata_.begin(), n_, 0);
+  std::fill_n(y_strata_.begin(), n_, 0);
   for (int i = 0; i < old_n; i++) {
     const auto& sample = samples_[i];
 

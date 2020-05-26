@@ -19,15 +19,17 @@
 #include "sample_generation/pmj.h"
 #include "sample_generation/pmj02.h"
 
+using std::string;
+
 namespace {
   void GetArguments(const int argc,
                     char* argv[],
                     int* n_samples,
                     std::string* algorithm) {
-    std::string samples_str = "256";
-    std::string algorithm_str = "pmj02";
+    string samples_str = "256";
+    string algorithm_str = "pmj02";
     for (int i = 1; i < argc; ++i) {
-      std::string arg = argv[i];
+      string arg = argv[i];
       if (arg == "--n") {
           if (i + 1 < argc) samples_str = argv[i+1];
       } else if (arg.rfind("--n=", 0) == 0) {
@@ -50,7 +52,7 @@ namespace {
 
 int main(int argc, char* argv[]) {
   int n_samples;
-  std::string algorithm;
+  string algorithm;
   GetArguments(argc, argv, &n_samples, &algorithm);
   std::unique_ptr<pmj::Point[]> samples =
       algorithm == "pj" ? pmj::GetProgJitteredSamples(n_samples) :

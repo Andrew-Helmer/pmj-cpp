@@ -14,6 +14,8 @@
 namespace pmj {
 namespace {
 
+using std::vector;
+
 class SampleSet {
  public:
   explicit SampleSet(const int num_samples,
@@ -22,13 +24,16 @@ class SampleSet {
                        num_candidates_(num_candidates) {
     samples_ = std::make_unique<Point[]>(num_samples);
 
-    sample_grid_.reserve(num_samples);
+    int grid_memory_size = 1;
+    while (grid_memory_size < num_samples)
+      grid_memory_size <<= 2;
+    sample_grid_.resize(grid_memory_size);
   }
 
   void PickSubquadrantWithBalance(const int sample_index,
                                      int* x_pos,
                                      int* y_pos);
-
+  void GenerateFirstSample();
   // This generates a new sample at the current index, given the X position
   // and Y position of the subquadrant. It won't generate a new sample in an
   // existing strata.
@@ -61,13 +66,13 @@ class SampleSet {
   void UpdateStrata(const Point& sample, const int partial_strata_index = -1);
 
   Point GetCandidateSample(const int x_pos,
-                             const int y_pos,
-                             const int partial_strata_index = -1) const;
+                           const int y_pos,
+                           const int partial_strata_index = -1) const;
 
   bool IsStrataOccupied(const Point& sample,
                           const int partial_strata_index = -1) const;
 
-  int get_partial_strata_index(const int sample_index) const;
+  int GetPartialStrataIndex(const int sample_index) const;
 
   // Gets the squared distance of the nearest neighbor to the given point.
   double GetNearestNeighborDistSq(const Point& sample) const;
@@ -77,12 +82,12 @@ class SampleSet {
   // Contains all strata of elementary (0,2) intervals, except for the grid
   // where the stratum width and height are the same. Each value is true/false
   // for if a sample resides there.
-  std::vector<std::vector<bool>> strata_ {};
+  vector<vector<bool>> strata_ {};
   // This is the same as above, but it's only used for odd powers of two.
-  std::vector<std::vector<bool>> partial_strata_[2] {};
+  vector<vector<bool>> partial_strata_[2] {};
 
   // The sample grid is used for nearest neighbor lookups.
-  std::vector<const Point*> sample_grid_ {nullptr};
+  vector<const Point*> sample_grid_ {nullptr};
 
   int n_ = 1;  // Number of samples in the next pass.
   bool is_power_of_4_ = true;
@@ -109,22 +114,21 @@ void SampleSet::SubdivideStrata() {
   if (!is_power_of_4_)
     strata_.resize(strata_.size()+2);
 
-  std::fill(strata_.begin(), strata_.end(), std::vector<bool>(n_, false));
+  std::fill(strata_.begin(), strata_.end(), vector<bool>(n_, false));
 
-  // For 3-4 samples, the partial strata are 2x1 and 1x2. For 9-16, they are
-  // 4x1 and 1x4. For 33-64, they are 16x1, 8x2, 2x8, 4x4. We only care about
-  // this for even powers of 2.
-  if (is_power_of_4_) {
+  // For 3-4 samples, the partial strata are both 1x1. For samples 9-12 and
+  // 13-16, the partial strata are 4x1, 1x4. For samples 33-48 and 49-64, we
+  // have 16x1, 8x2, 2x8, 1x16.
+  if (is_power_of_4_ && n_ >= 16) {
     for (int i = 0; i < 2; i++) {
       partial_strata_[i].resize(partial_strata_[i].size()+2);
       std::fill(partial_strata_[i].begin(),
                 partial_strata_[i].end(),
-                std::vector<bool>(n_/2, false));
+                vector<bool>(n_/4, false));
     }
   }
 
-  sample_grid_.resize(n_);
-  std::fill(sample_grid_.begin(), sample_grid_.end(), nullptr);
+  std::fill_n(sample_grid_.begin(), old_n, nullptr);
   for (int i = 0; i < old_n; i++) {
     const auto& sample = samples_[i];
 
@@ -141,23 +145,46 @@ Point SampleSet::GetCandidateSample(const int x_pos,
                                     const int y_pos,
                                     const int partial_strata_index) const {
   while (true) {
-    Point sample = {UniformRand(x_pos*grid_size_, (x_pos+1)*grid_size_),
-                    UniformRand(y_pos*grid_size_, (y_pos+1)*grid_size_)};
+    // We first sample each dimension separately, and check only the 1D strata.
+    // This significantly improves performance, with roughly a 2x speedup.
+    Point sample;
+    while (true) {
+      sample.x = UniformRand(x_pos*grid_size_, (x_pos+1)*grid_size_);
+      int strata_index = sample.x * n_;
+      if (strata_[0][strata_index]) continue;
+      break;
+    }
+    while (true) {
+      sample.y = UniformRand(y_pos*grid_size_, (y_pos+1)*grid_size_);
+      int strata_index = sample.y * n_;
+      if (strata_.back()[strata_index]) continue;
+      break;
+    }
+
     if (!IsStrataOccupied(sample, partial_strata_index)) {
       return sample;
     }
   }
 }
 
-int SampleSet::get_partial_strata_index(const int sample_index) const {
+int SampleSet::GetPartialStrataIndex(const int sample_index) const {
+  if (n_ <= 8) {
+    // No partial strata yet.
+    return -1;
+  }
   // We use this to determine whether we're in an even or odd power of 2. Of
   // course there are other ways to do this.
   const int n_total = dim_*dim_;
   return sample_index < (n_total/2)
       ? -1
-      : ((sample_index - n_total/2) < (n_total/2)
+      : ((sample_index - n_total/2) < (n_total/4)
           ? 0
           : 1);
+}
+
+void SampleSet::GenerateFirstSample() {
+  Point sample = {UniformRand(), UniformRand()};
+  AddSample(0, sample);
 }
 
 void SampleSet::GenerateNewSample(const int sample_index,
@@ -168,7 +195,7 @@ void SampleSet::GenerateNewSample(const int sample_index,
 
   for (int i = 0; i < num_candidates_; i++) {
     Point cand_sample = GetCandidateSample(
-        x_pos, y_pos, get_partial_strata_index(sample_index));
+        x_pos, y_pos, GetPartialStrataIndex(sample_index));
     double dist_sq = GetNearestNeighborDistSq(cand_sample);
     if (dist_sq > max_dist_sq) {
       best_candidate = cand_sample;
@@ -192,9 +219,9 @@ void SampleSet::UpdateStrata(const Point& sample,
     strata_[i][y_pos*dim_x + x_pos] = true;
   }
 
-  // Only difference from above is n/2, and partial_strata_.
+  // Only difference from above is n/4, and partial_strata_.
   if (partial_strata_index >= 0) {
-    for (int i = 0, dim_x = n_ / 2, dim_y = 1;
+    for (int i = 0, dim_x = n_ / 4, dim_y = 1;
          dim_x >= 1;
          dim_x /= 2, dim_y *= 2, i++) {
       if (dim_x == dim_y) {
@@ -224,9 +251,11 @@ bool SampleSet::IsStrataOccupied(const Point& sample,
     if (strata_[i][y_pos*dim_x + x_pos]) return true;
   }
 
-  // Only difference from above is n/2, and partial_strata_.
+  return false;
+
+  // Only difference from above is n/4, and partial_strata_.
   if (partial_strata_index >= 0) {
-      for (int i = 0, dim_x = n_ / 2, dim_y = 1;
+      for (int i = 0, dim_x = n_ / 4, dim_y = 1;
            dim_x >= 1;
            dim_x /= 2, dim_y *= 2, i++) {
         if (dim_x == dim_y) {
@@ -247,7 +276,7 @@ void SampleSet::AddSample(const int i,
                           const Point& sample) {
   samples_[i] = sample;
 
-  UpdateStrata(sample, get_partial_strata_index(i));
+  UpdateStrata(sample, GetPartialStrataIndex(i));
 
   const int x_pos = sample.x * dim_, y_pos = sample.y * dim_;
   sample_grid_[y_pos*dim_ + x_pos] = &(samples_[i]);
@@ -317,9 +346,9 @@ double SampleSet::GetNearestNeighborDistSq(const Point& sample) const {
 // Modifies x_pos and y_pos to point to a new non-diagonal (adjacent)
 // subquadrant, taking into account current balance.
 void SampleSet::PickSubquadrantWithBalance(const int sample_index,
-                                              int* x_pos,
-                                              int* y_pos) {
-  const int partial_strata_index = get_partial_strata_index(sample_index);
+                                           int* x_pos,
+                                           int* y_pos) {
+  const int partial_strata_index = GetPartialStrataIndex(sample_index);
   int x_pos1 = *x_pos ^ 1, y_pos1 = *y_pos;
   int x_pos2 = *x_pos , y_pos2 = *y_pos ^ 1;
   while (true) {
@@ -356,7 +385,7 @@ std::unique_ptr<Point[]> GenerateSamples(
   SampleSet sample_set(num_samples, num_candidates);
 
   // Generate first sample.
-  sample_set.GenerateNewSample(0, 0, 0);
+  sample_set.GenerateFirstSample();
 
   int n = 1;  // This n is not the same as the one in SampleSet!!
   while (n < num_samples) {

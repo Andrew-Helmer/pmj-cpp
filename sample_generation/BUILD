@@ -1,5 +1,15 @@
 package(default_visibility = ["//visibility:public"])
 
+# If you want symbols on a Mac, build with -c dbg and --spawn_strategy=local. 
+# This is annoyingly necessary.
+genrule(
+    name = "sample_generation_dsym",
+    srcs = [":sample_generation"],
+    outs = ["sample_generation.dSYM"],
+    output_to_bindir = True,
+    cmd = "dsymutil $(location :sample_generation) -o $@"
+)
+
 cc_library(
     name = "sample_generation",
     srcs = glob(["*.cc"]),

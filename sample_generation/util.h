@@ -13,10 +13,6 @@ typedef struct {
   double y;
 } Point;
 
-// Get a random number generator. All of the functions in this file are
-// thread-safe.
-std::default_random_engine& GetRandGen();
-
 // Gets a random double between any two numbers.
 double UniformRand(double min = 0.0, double max = 1.0);
 

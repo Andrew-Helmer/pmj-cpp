@@ -13,7 +13,7 @@ typedef struct {
   double y;
 } Point;
 
-// Gets a random double between any two numbers.
+// Gets a random double between any two numbers. NOT THREAD-SAFE.
 double UniformRand(double min = 0.0, double max = 1.0);
 
 }  // namespace pmj

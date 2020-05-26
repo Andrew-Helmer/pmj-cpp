@@ -168,6 +168,8 @@ Point SampleSet::GetCandidateSample(const int x_pos,
 }
 
 int SampleSet::GetPartialStrataIndex(const int sample_index) const {
+  return -1;
+
   if (n_ <= 8) {
     // No partial strata yet.
     return -1;
@@ -196,10 +198,14 @@ void SampleSet::GenerateNewSample(const int sample_index,
   for (int i = 0; i < num_candidates_; i++) {
     Point cand_sample = GetCandidateSample(
         x_pos, y_pos, GetPartialStrataIndex(sample_index));
-    double dist_sq = GetNearestNeighborDistSq(cand_sample);
-    if (dist_sq > max_dist_sq) {
+    if (num_candidates_ > 1) {
+      double dist_sq = GetNearestNeighborDistSq(cand_sample);
+      if (dist_sq > max_dist_sq) {
+        best_candidate = cand_sample;
+        max_dist_sq = dist_sq;
+      }
+    } else {
       best_candidate = cand_sample;
-      max_dist_sq = dist_sq;
     }
   }
   AddSample(sample_index, best_candidate);
@@ -250,8 +256,6 @@ bool SampleSet::IsStrataOccupied(const Point& sample,
 
     if (strata_[i][y_pos*dim_x + x_pos]) return true;
   }
-
-  return false;
 
   // Only difference from above is n/4, and partial_strata_.
   if (partial_strata_index >= 0) {

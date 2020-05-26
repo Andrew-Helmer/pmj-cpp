@@ -13,6 +13,7 @@
 #include <iostream>
 #include <memory>
 #include <random>
+#include <signal.h>
 #include <utility>
 
 #include "sample_generation/pj.h"

@@ -107,11 +107,12 @@ void SampleSet::SubdivideStrata() {
 // This generates a sample within the grid position, verifying that it doesn't
 // overlap strata with any other sample.
 double get_1d_strata_sample(const int pos,
+                            const int n,
                            const double grid_size,
                            const std::vector<bool>& strata) {
   while (true) {
     double val = UniformRand(pos*grid_size, (pos+1)*grid_size);
-    int strata_pos = val*strata.size();
+    int strata_pos = val * n;
     if (!strata[strata_pos]) {
       return val;
     }
@@ -124,12 +125,17 @@ void SampleSet::GenerateNewSample(const int sample_index,
   Point best_candidate;
   double max_dist_sq = 0.0;
   for (int i = 0; i < num_candidates_; i++) {
-    Point cand_sample = {get_1d_strata_sample(x_pos, grid_size_, x_strata_),
-                         get_1d_strata_sample(y_pos, grid_size_, y_strata_)};
-    double dist_sq = GetNearestNeighborDistSq(cand_sample);
-    if (dist_sq > max_dist_sq) {
+    Point cand_sample =
+        {get_1d_strata_sample(x_pos, n_, grid_size_, x_strata_),
+         get_1d_strata_sample(y_pos, n_, grid_size_, y_strata_)};
+    if (num_candidates_ > 1) {
+      double dist_sq = GetNearestNeighborDistSq(cand_sample);
+      if (dist_sq > max_dist_sq) {
+        best_candidate = cand_sample;
+        max_dist_sq = dist_sq;
+      }
+    } else {
       best_candidate = cand_sample;
-      max_dist_sq = dist_sq;
     }
   }
   AddSample(sample_index, best_candidate);
@@ -207,53 +213,138 @@ double SampleSet::GetNearestNeighborDistSq(const Point& sample) const {
   return min_dist_sq;
 }
 
-// Modifies x_pos and y_pos to point to a new non-diagonal (adjacent)
-// subquadrant, taking into account current balance.
-void PickSubquadrantWithBalance(const int x_balance,
-                                   const int y_balance,
-                                   int* x_pos,
-                                   int* y_pos) {
-  // The idea with the balance is, if we've mostly picked left cells within
-  // subquadrants, we want to pick a right cell, and vice versa, and the same
-  // for top and bottom.
-  //
-  // In Christensen et. al, they precompute these choices for the grid, but I
-  // *THINK* this greedy method works just as well? And IMO it's easier to
-  // understand. Mini-proof that this should work nearly ideally at the bottom
-  // of this function.
-  if (x_balance == 0 && y_balance == 0) {
-    // If both are zero, we want to pick truly randomly.
-    if (UniformRand() < 0.5) *x_pos = *x_pos ^ 1;
-    else
-      *y_pos = *y_pos ^ 1;
-  } else {
-    bool use_x_balance = abs(x_balance) > abs(y_balance);
-    if (abs(x_balance) == abs(y_balance)) {
-      // If they're equal, we randomly pick one to balance. This is better
-      // than randomly moving in one direction, because sometimes both
-      // balances equally dictate the same move.
-      use_x_balance = UniformRand() < 0.5;
-    }
-    if (use_x_balance) {
-      bool balance_to_right = x_balance < 0;
-      if ((*x_pos & 1) != balance_to_right) *x_pos = *x_pos ^ 1;
-      else
-        *y_pos = *y_pos ^ 1;
-    } else {
-      bool balance_to_up = y_balance < 0;
-      if ((*y_pos & 1) != balance_to_up) *y_pos = *y_pos ^ 1;
-      else
-        *x_pos = *x_pos ^ 1;
-    }
+/*
+ * This function chooses the subquads to use in between even and odd powers
+ * of two. In Christensen et al., they use ox-plowing, but only balance in the
+ * Y dimension. This uses a Hilbert curve and a couple of other heuristics to
+ * balance both dimensions.
+ */
+void HilbertRotate(int n, int *x, int *y, int rx, int ry) {
+  // This function was copied from Wikipedia.
+  if (ry == 0) {
+      if (rx == 1) {
+          *x = n-1 - *x;
+          *y = n-1 - *y;
+      }
+
+      // Swap x and y.
+      int t  = *x;
+      *x = *y;
+      *y = t;
   }
-  /*
-   * Mini-proof that this should work well. We start with a balance of (0,0).
-   * from balance (0,0) we can move only to (1,1), (-1,-1), (1,-1), or (-1,1).
-   * For conciseness, let's say we can only move to abs(1,1). From abs(1,1), we
-   * can only move to (0,0), abs(2,0), or abs(0,2). From abs(2,0) or abs(0,2),
-   * we can only move to abs(1, 1)! So balance is bounded throughout the
-   * sampling process.
-   */
+}
+void HilbertIndexToPos(int n, int d, int *x, int *y) {
+  // This function was copied from Wikipedia.
+  int rx, ry, s, t = d;
+  *x = *y = 0;
+  for (s = 1; s < n; s *= 2) {
+      rx = 1 & (t/2);
+      ry = 1 & (t ^ rx);
+      HilbertRotate(s, x, y, rx, ry);
+      *x += s * rx;
+      *y += s * ry;
+      t /= 4;
+  }
+}
+std::vector<std::pair<int, int>> GetBalancedChoices(const SampleSet& sample_set,
+                                                    const int n) {
+  // We'll return out choices at the end.
+  std::vector<std::pair<int, int>> choices(n);
+
+  // Sample Set dimension is the sub_quadrant dimension, we want the quadrant
+  // dimension.
+  const int quad_dim = sample_set.dim() / 2;
+
+  // First we want to get the subquadrant positions, and also the sampling order
+  // from
+  std::vector<int> first_cells(n*2);
+  std::vector<int> quadrant_order(n);
+  for (int i = 0; i < n; i++) {
+    const auto& sample = sample_set.sample(i);
+    int x_pos = sample.x * sample_set.dim();
+    int y_pos = sample.y * sample_set.dim();
+    const int quadrant_index = (y_pos / 2)*(quad_dim) + (x_pos / 2);
+    first_cells[2*quadrant_index] = x_pos;
+    first_cells[2*quadrant_index+1] = y_pos;
+    quadrant_order[quadrant_index] = i;
+  }
+
+  std::vector<int> choice_balance_x(quad_dim);
+  std::vector<int> choice_balance_y(quad_dim);
+  std::vector<int> num_visited_x(quad_dim);
+  std::vector<int> num_visited_y(quad_dim);
+
+  // This method doesn't alway work on the first try, though it usually does.
+  // It pretty much never takes more than 3 or 4 tries, at it's pretty fast.
+  for (int attempt = 0; attempt < 10; attempt++) {
+    std::fill_n(choice_balance_x.begin(), quad_dim, 0);
+    std::fill_n(choice_balance_y.begin(), quad_dim, 0);
+    std::fill_n(num_visited_x.begin(), quad_dim, 0);
+    std::fill_n(num_visited_y.begin(), quad_dim, 0);
+    for (int i = 0; i < n; i++) {
+      int col, row;
+      HilbertIndexToPos(n, i, &col, &row);
+
+      int quadrant_index = row*quad_dim + col;
+
+      // The subquadrant positions of the first sample in this quadrant.
+      int x_pos = first_cells[2*quadrant_index];
+      int y_pos = first_cells[2*quadrant_index+1];
+
+      // We'll either swap Y or X.
+      bool swap_x = false;
+
+      int balance_x = choice_balance_x[col];
+      int balance_y = choice_balance_y[row];
+      int x_remaining = quad_dim - num_visited_x[col] - abs(balance_x);
+      int y_remaining = quad_dim - num_visited_y[row] - abs(balance_y);
+
+      if (x_remaining == y_remaining && abs(balance_x) == abs(balance_y) &&
+          balance_x != 0) {
+        // If there's equal imbalance, we pick one of the balances randomly.
+        if (UniformRand() < 0.5) balance_x = 0;
+        else
+          balance_y = 0;
+      }
+
+      if (x_remaining > y_remaining && balance_y != 0) {
+        swap_x = (balance_y > 0) != (y_pos & 1);
+      } else if (y_remaining > x_remaining && balance_x != 0) {
+        swap_x = (balance_x > 0) == (x_pos & 1);
+      } else if (abs(balance_x) > abs(balance_y)) {
+        swap_x = (balance_x > 0) == (x_pos & 1);
+      } else if (abs(balance_y) > abs(balance_x)) {
+        swap_x = (balance_y > 0) != (y_pos & 1);
+      } else {
+        // balance_x == 0 && balance_y == 0 && x_remaining == y_remaining
+        if (UniformRand() < 0.5) swap_x = true;
+      }
+
+      x_pos = swap_x ? (x_pos ^ 1) : x_pos;
+      y_pos = !swap_x ? (y_pos ^ 1) : y_pos;
+
+      choices[quadrant_order[quadrant_index]].first = x_pos;
+      choices[quadrant_order[quadrant_index]].second = y_pos;
+
+      num_visited_x[col]++;
+      num_visited_y[row]++;
+
+      choice_balance_x[col] += (x_pos & 1) ? 1 : -1;
+      choice_balance_y[row] += (y_pos & 1) ? 1 : -1;
+    }
+    bool attempt_successful = true;
+    for (int i = 0; i < quad_dim; i++) {
+      if (choice_balance_x[i] != 0 || choice_balance_y[i] != 0) {
+        attempt_successful = false;
+      }
+    }
+    if (n == 1 || attempt_successful) {
+      break;
+    }
+    std::cout << "Balance unsuccessful \n";
+  }
+
+  return choices;
 }
 
 std::unique_ptr<Point[]> GenerateSamples(
@@ -282,42 +373,21 @@ std::unique_ptr<Point[]> GenerateSamples(
       }
     }
 
+    // Now we generate samples in the remaining subquadrants.
     sample_set.SubdivideStrata();
 
-    // Now we generate samples in the remaining quadrants. This is a bit
-    // trickier because we need to decide which quadrant to use, and we want to
-    // make "balanced" choices here, so we keep track of balance. The x_balance
-    // is negative if there are more left diagonal samples than right, and
-    // positive if there are more to the right. The y is similar but up / down.
-    int x_balance = 0, y_balance = 0;
-    // This represents the x_pos and y_pos of the subquadrants that we choose.
-    int chosen_cells[n][2];
+    // We want to make balanced choices here regarding which subquadrants to
+    // use, so we precompute them in a special way (see above).
+    auto sub_quad_choices = GetBalancedChoices(sample_set, n);
     for (int i = 0; i < n && 2*n+i < num_samples; i++) {
-      const auto& sample = sample_set.sample(i);
-
-      int x_pos = sample.x * sample_set.dim();
-      int y_pos = sample.y * sample_set.dim();
-
-      PickSubquadrantWithBalance(x_balance, y_balance, &x_pos, &y_pos);
-
-      sample_set.GenerateNewSample(2*n+i, x_pos, y_pos);
-
-      // Update balances.
-      if (x_pos & 1) x_balance++;
-      else
-        x_balance--;
-      if (y_pos & 1) y_balance++;
-      else
-        y_balance--;
-
-      chosen_cells[i][0] = x_pos;
-      chosen_cells[i][1] = y_pos;
+      sample_set.GenerateNewSample(
+          2*n+i, sub_quad_choices[i].first, sub_quad_choices[i].second);
     }
 
     for (int i = 0; i < n && 3*n+i < num_samples; i++) {
       // Get the one diagonally opposite to the one we just got.
       sample_set.GenerateNewSample(
-          3*n+i, chosen_cells[i][0] ^ 1, chosen_cells[i][1] ^ 1);
+          3*n+i, sub_quad_choices[i].first ^ 1, sub_quad_choices[i].second ^ 1);
     }
 
     n *= 4;

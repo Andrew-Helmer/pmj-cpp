@@ -27,6 +27,16 @@ cc_library(
     name = "pmj",
     srcs = ["pmj.cc"],
     hdrs = ["pmj.h"],
+    deps = [
+        ":pmj_util",
+        ":util",
+    ]
+)
+
+cc_library(
+    name = "pmj_util",
+    srcs = ["pmj_util.cc"],
+    hdrs = ["pmj_util.h"],
     deps = [":util"]
 )
 

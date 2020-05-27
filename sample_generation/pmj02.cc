@@ -28,7 +28,7 @@ class SampleSet {
     int grid_memory_size = 1;
     while (grid_memory_size < num_samples)
       grid_memory_size <<= 2;
-    sample_grid_.resize(grid_memory_size);
+    sample_grid_ = std::make_unique<const Point*[]>(grid_memory_size);
   }
 
   void PickSubquadrantWithBalance(const int sample_index,
@@ -84,9 +84,6 @@ class SampleSet {
 
   int GetPartialStrataIndex(const int sample_index) const;
 
-  // Gets the squared distance of the nearest neighbor to the given point.
-  double GetNearestNeighborDistSq(const Point& sample) const;
-
   std::unique_ptr<Point[]> samples_;
 
   // Contains all strata of elementary (0,2) intervals, except for the grid
@@ -97,7 +94,7 @@ class SampleSet {
   vector<vector<bool>> partial_strata_[2] {};
 
   // The sample grid is used for nearest neighbor lookups.
-  vector<const Point*> sample_grid_ {nullptr};
+  std::unique_ptr<const Point*[]> sample_grid_;
 
   int n_ = 1;  // Number of samples in the next pass.
   bool is_power_of_4_ = true;
@@ -138,7 +135,7 @@ void SampleSet::SubdivideStrata() {
     }
   }
 
-  std::fill_n(sample_grid_.begin(), old_n, nullptr);
+  std::fill_n(sample_grid_.get(), old_n, nullptr);
   for (int i = 0; i < old_n; i++) {
     const auto& sample = samples_[i];
 
@@ -259,7 +256,7 @@ void SampleSet::InitializeSampleTrees(const int x_pos,
                                       vector<bool>* y_tree) {
   if (is_power_of_4_) {
     // Unfortunately we have to do this to get around the fact that there isn't
-    // a square strata in array of strata.
+    // a square strata in our array of strata.
     InitializeXTree(
         x_tree, 1, x_pos*2, y_pos/2, strata_.size()/2-1, dim_*2, strata_);
     InitializeXTree(
@@ -319,7 +316,8 @@ void SampleSet::GenerateNewSample(const int sample_index,
     Point cand_sample = GetCandidateSample(
         x_pos, y_pos, valid_strata.first, valid_strata.second);
     if (num_candidates_ > 1) {
-      double dist_sq = GetNearestNeighborDistSq(cand_sample);
+      double dist_sq =
+          GetNearestNeighborDistSq(cand_sample, sample_grid_.get(), dim_);
       if (dist_sq > max_dist_sq) {
         best_candidate = cand_sample;
         max_dist_sq = dist_sq;
@@ -404,67 +402,6 @@ void SampleSet::AddSample(const int i,
 
   const int x_pos = sample.x * dim_, y_pos = sample.y * dim_;
   sample_grid_[y_pos*dim_ + x_pos] = &(samples_[i]);
-}
-
-double dist_sq(double x1, double y1, double x2, double y2) {
-  double x_diff = x2-x1, y_diff = y2-y1;
-  return (x_diff*x_diff)+(y_diff*y_diff);
-}
-
-double SampleSet::GetNearestNeighborDistSq(const Point& sample) const {
-  // This function works by using the sample grid, since we know that the points
-  // are well-distributed with at most one point in each cell. Much easier than
-  // using any of the other data structures!
-  //
-  // Anyway start with the cells that are adjacent to our current cell and each
-  // loop iteration we move outwards. We keep a track of the "grid radius",
-  // which is the radius of the circle contained within our squares. If the
-  // nearest point falls within this radius, we know that the next outward shift
-  // can't find any nearer points.
-  const int x_pos = sample.x * dim_;
-  const int y_pos = sample.y * dim_;
-  double min_dist_sq = 1.0;
-  for (int i = 1; i <= dim_; i++) {
-    double grid_radius = grid_size_ * i;
-    double grid_radius_sq = grid_radius * grid_radius;
-
-    const int x_min = std::max(x_pos - i, 0);
-    const int x_max = std::min(x_pos + i, dim_-1);
-    const int y_min = std::max(y_pos - i, 0);
-    const int y_max = std::min(y_pos + i, dim_-1);
-    // Traverse top and bottom boundaries, including corners.
-    for (int x_offset = x_min; x_offset <= x_max; x_offset++) {
-      const Point* top_pt = sample_grid_[y_max*dim_+x_offset];
-      const Point* bottom_pt = sample_grid_[y_min*dim_+x_offset];
-      if (top_pt != nullptr)
-          min_dist_sq = std::min(min_dist_sq,
-                                 dist_sq(top_pt->x, top_pt->y,
-                                         sample.x, sample.y));
-      if (bottom_pt != nullptr)
-          min_dist_sq = std::min(min_dist_sq,
-                                 dist_sq(bottom_pt->x, bottom_pt->y,
-                                         sample.x, sample.y));
-    }
-    // Traverse left and right sides, excluding corners (hence the +1, -1).
-    for (int y_offset = y_min+1; y_offset <= y_max-1; y_offset++) {
-      const Point* left_pt = sample_grid_[y_offset*dim_+x_min];
-      const Point* right_pt = sample_grid_[y_offset*dim_+x_max];
-      if (left_pt != nullptr)
-          min_dist_sq = std::min(min_dist_sq,
-                                 dist_sq(left_pt->x, left_pt->y,
-                                         sample.x, sample.y));
-      if (right_pt != nullptr)
-          min_dist_sq = std::min(min_dist_sq,
-                                 dist_sq(right_pt->x, right_pt->y,
-                                         sample.x, sample.y));
-    }
-
-    if (min_dist_sq < grid_radius_sq) {
-      break;
-    }
-  }
-
-  return min_dist_sq;
 }
 
 // Modifies x_pos and y_pos to point to a new non-diagonal (adjacent)
@@ -579,7 +516,7 @@ std::unique_ptr<Point[]> GetPMJ02Samples(
 
 std::unique_ptr<Point[]> GetPMJ02SamplesWithBlueNoise(
     const int num_samples) {
-  return GenerateSamples(num_samples, 100);
+  return GenerateSamples(num_samples, 20);
 }
 
 }  // namespace pmj

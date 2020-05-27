@@ -55,7 +55,6 @@ int main(int argc, char* argv[]) {
   int n_samples;
   string algorithm;
   GetArguments(argc, argv, &n_samples, &algorithm);
-  // raise(SIGSTOP);
   std::unique_ptr<pmj::Point[]> samples =
       algorithm == "pj" ? pmj::GetProgJitteredSamples(n_samples) :
       algorithm == "pmj" ? pmj::GetProgMultiJitteredSamples(n_samples) :

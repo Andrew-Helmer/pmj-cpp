@@ -12,6 +12,7 @@ cc_binary(
     deps = [
     	"//sample_generation:sample_generation",
     	"@com_google_absl//absl/strings",
-    	"@com_github_gflags_gflags//:gflags",
+    	"@com_google_absl//absl/flags:flag",
+    	"@com_google_absl//absl/flags:parse",
     ],
 )

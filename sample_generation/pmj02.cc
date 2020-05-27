@@ -6,6 +6,7 @@
 #include <iostream>
 #include <memory>
 #include <random>
+#include <signal.h>
 #include <utility>
 #include <vector>
 
@@ -65,9 +66,18 @@ class SampleSet {
   // Given a sample, sets all the correct strata to true.
   void UpdateStrata(const Point& sample, const int partial_strata_index = -1);
 
+  std::pair<vector<int>, vector<int>> GetValidStrata(
+      const int x_pos, const int y_pos);
+
+  void InitializeSampleTrees(const int x_pos,
+                             const int y_pos,
+                             vector<bool>* x_tree,
+                             vector<bool>* y_tree);
+
   Point GetCandidateSample(const int x_pos,
                            const int y_pos,
-                           const int partial_strata_index = -1) const;
+                           const vector<int>& valid_x_strata,
+                           const vector<int>& valid_y_strata) const;
 
   bool IsStrataOccupied(const Point& sample,
                           const int partial_strata_index = -1) const;
@@ -143,28 +153,22 @@ void SampleSet::SubdivideStrata() {
 // overlap strata with any other sample.
 Point SampleSet::GetCandidateSample(const int x_pos,
                                     const int y_pos,
-                                    const int partial_strata_index) const {
-  while (true) {
-    // We first sample each dimension separately, and check only the 1D strata.
-    // This significantly improves performance, with roughly a 2x speedup.
-    Point sample;
-    while (true) {
-      sample.x = UniformRand(x_pos*grid_size_, (x_pos+1)*grid_size_);
-      int strata_index = sample.x * n_;
-      if (strata_[0][strata_index]) continue;
-      break;
-    }
-    while (true) {
-      sample.y = UniformRand(y_pos*grid_size_, (y_pos+1)*grid_size_);
-      int strata_index = sample.y * n_;
-      if (strata_.back()[strata_index]) continue;
-      break;
-    }
+                                    const vector<int>& valid_x_strata,
+                                    const vector<int>& valid_y_strata) const {
+  Point sample;
 
-    if (!IsStrataOccupied(sample, partial_strata_index)) {
-      return sample;
-    }
-  }
+  int x_strata_index = valid_x_strata[UniformInt(0, valid_x_strata.size()-1)];
+  int y_strata_index = valid_y_strata[UniformInt(0, valid_y_strata.size()-1)];
+
+  double strata_width = 1.0 / n_;
+  int x_strata_pos = x_pos*(n_ / dim_) + x_strata_index;
+  int y_strata_pos = y_pos*(n_ / dim_) + y_strata_index;
+  sample.x = UniformRand(strata_width*x_strata_pos,
+                         strata_width*(x_strata_pos+1));
+  sample.y = UniformRand(strata_width*y_strata_pos,
+                         strata_width*(y_strata_pos+1));
+
+  return sample;
 }
 
 int SampleSet::GetPartialStrataIndex(const int sample_index) const {
@@ -189,15 +193,131 @@ void SampleSet::GenerateFirstSample() {
   AddSample(0, sample);
 }
 
+void InitializeXTree(vector<bool>* tree,
+                     const int tree_index,
+                     const int x_pos,
+                     const int y_pos,
+                     const int strata_index,
+                     const int strata_width,
+                     const vector<vector<bool>>& strata) {
+  (*tree)[tree_index] =
+      strata[strata_index][y_pos*strata_width + x_pos];
+
+  if (!(*tree)[tree_index] && (2*tree_index+1 < tree->size())) {
+    InitializeXTree(tree,
+                    2*tree_index+1,
+                    x_pos * 2,
+                    y_pos / 2,
+                    strata_index - 1,
+                    strata_width * 2,
+                    strata);
+    InitializeXTree(tree,
+                    2*tree_index+2,
+                    x_pos * 2 + 1,
+                    y_pos / 2,
+                    strata_index - 1,
+                    strata_width * 2,
+                    strata);
+    (*tree)[tree_index] =
+        (*tree)[2*tree_index+1] && (*tree)[2*tree_index+2];
+  }
+}
+
+void InitializeYTree(vector<bool>* tree,
+                     const int tree_index,
+                     const int x_pos,
+                     const int y_pos,
+                     const int strata_index,
+                     const int strata_width,
+                     const vector<vector<bool>>& strata) {
+  (*tree)[tree_index] =
+      strata[strata_index][y_pos*strata_width + x_pos];
+
+  if (!(*tree)[tree_index] && (2*tree_index+1 < tree->size())) {
+    InitializeYTree(tree,
+                    2*tree_index+1,
+                    x_pos / 2,
+                    y_pos * 2,
+                    strata_index + 1,
+                    strata_width / 2,
+                    strata);
+    InitializeYTree(tree,
+                    2*tree_index+2,
+                    x_pos / 2,
+                    y_pos * 2 + 1,
+                    strata_index + 1,
+                    strata_width / 2,
+                    strata);
+    (*tree)[tree_index] =
+        (*tree)[2*tree_index+1] && (*tree)[2*tree_index+2];
+  }
+}
+
+void SampleSet::InitializeSampleTrees(const int x_pos,
+                                      const int y_pos,
+                                      vector<bool>* x_tree,
+                                      vector<bool>* y_tree) {
+  if (is_power_of_4_) {
+    // Unfortunately we have to do this to get around the fact that there isn't
+    // a square strata in array of strata.
+    InitializeXTree(
+        x_tree, 1, x_pos*2, y_pos/2, strata_.size()/2-1, dim_*2, strata_);
+    InitializeXTree(
+        x_tree, 2, x_pos*2+1, y_pos/2, strata_.size()/2-1, dim_*2, strata_);
+    InitializeYTree(
+        y_tree, 1, x_pos/2, y_pos*2, strata_.size()/2, dim_/2, strata_);
+    InitializeYTree(
+        y_tree, 2, x_pos/2, y_pos*2+1, strata_.size()/2, dim_/2, strata_);
+  } else {
+    InitializeXTree(
+        x_tree, 0, x_pos, y_pos/2, strata_.size()/2-1, dim_, strata_);
+    InitializeYTree(
+        y_tree, 0, x_pos/2, y_pos, strata_.size()/2, dim_/2, strata_);
+  }
+}
+
+void GetValidStrataRecursive(const vector<bool>& tree,
+                             const int tree_index,
+                             vector<int>* valid_offsets) {
+  if (!tree[tree_index]) {
+    if (tree_index*2 + 1 >= tree.size()) {
+      // Add the corresponding 1D strata index.
+      valid_offsets->push_back(tree_index - tree.size() / 2);
+    } else {
+      GetValidStrataRecursive(tree, tree_index*2 + 1, valid_offsets);
+      GetValidStrataRecursive(tree, tree_index*2 + 2, valid_offsets);
+    }
+  }
+}
+
+std::pair<vector<int>, vector<int>> SampleSet::GetValidStrata(
+    const int x_pos, const int y_pos) {
+  std::pair<vector<int>, vector<int>> strata = {{}, {}};
+
+  vector<bool> x_tree((n_/dim_)*2 - 1);
+  vector<bool> y_tree((n_/dim_)*2 - 1);
+  InitializeSampleTrees(x_pos, y_pos, &x_tree, &y_tree);
+
+  GetValidStrataRecursive(x_tree, 0, &(strata.first));
+  GetValidStrataRecursive(y_tree, 0, &(strata.second));
+
+  return strata;
+}
+
 void SampleSet::GenerateNewSample(const int sample_index,
                                   const int x_pos,
                                   const int y_pos) {
   Point best_candidate;
   double max_dist_sq = 0.0;
 
+  int partial_strata_index = GetPartialStrataIndex(sample_index);
+
+  const std::pair<vector<int>, vector<int>> valid_strata =
+      GetValidStrata(x_pos, y_pos);
+
   for (int i = 0; i < num_candidates_; i++) {
     Point cand_sample = GetCandidateSample(
-        x_pos, y_pos, GetPartialStrataIndex(sample_index));
+        x_pos, y_pos, valid_strata.first, valid_strata.second);
     if (num_candidates_ > 1) {
       double dist_sq = GetNearestNeighborDistSq(cand_sample);
       if (dist_sq > max_dist_sq) {
@@ -213,63 +333,63 @@ void SampleSet::GenerateNewSample(const int sample_index,
 
 void SampleSet::UpdateStrata(const Point& sample,
                              const int partial_strata_index) {
-  for (int i = 0, dim_x = n_, dim_y = 1;
-       dim_x >= 1;
-       dim_x /= 2, dim_y *= 2, i++) {
-    if (dim_x == dim_y) {
+  for (int i = 0, x_width = n_, y_width = 1;
+       x_width >= 1;
+       x_width /= 2, y_width *= 2, i++) {
+    if (x_width == y_width) {
       i--;
       continue;
     }
-    int x_pos = sample.x * dim_x;
-    int y_pos = sample.y * dim_y;
-    strata_[i][y_pos*dim_x + x_pos] = true;
+    int x_pos = sample.x * x_width;
+    int y_pos = sample.y * y_width;
+    strata_[i][y_pos*x_width + x_pos] = true;
   }
 
   // Only difference from above is n/4, and partial_strata_.
   if (partial_strata_index >= 0) {
-    for (int i = 0, dim_x = n_ / 4, dim_y = 1;
-         dim_x >= 1;
-         dim_x /= 2, dim_y *= 2, i++) {
-      if (dim_x == dim_y) {
+    for (int i = 0, x_width = n_ / 4, y_width = 1;
+         x_width >= 1;
+         x_width /= 2, y_width *= 2, i++) {
+      if (x_width == y_width) {
         i--;
         continue;
       }
-      int x_pos = sample.x * dim_x;
-      int y_pos = sample.y * dim_y;
+      int x_pos = sample.x * x_width;
+      int y_pos = sample.y * y_width;
 
-      partial_strata_[partial_strata_index][i][y_pos*dim_x + x_pos] = true;
+      partial_strata_[partial_strata_index][i][y_pos*x_width + x_pos] = true;
     }
   }
 }
 
 bool SampleSet::IsStrataOccupied(const Point& sample,
                                  const int partial_strata_index) const {
-  for (int i = 0, dim_x = n_, dim_y = 1;
-       dim_x >= 1;
-       dim_x /= 2, dim_y *= 2, i++) {
-    if (dim_x == dim_y) {
+  for (int i = 0, x_width = n_, y_width = 1;
+       x_width >= 1;
+       x_width /= 2, y_width *= 2, i++) {
+    if (x_width == y_width) {
       i--;
       continue;
     }
-    int x_pos = sample.x * dim_x;
-    int y_pos = sample.y * dim_y;
+    int x_pos = sample.x * x_width;
+    int y_pos = sample.y * y_width;
 
-    if (strata_[i][y_pos*dim_x + x_pos]) return true;
+    if (strata_[i][y_pos*x_width + x_pos]) return true;
   }
 
   // Only difference from above is n/4, and partial_strata_.
   if (partial_strata_index >= 0) {
-      for (int i = 0, dim_x = n_ / 4, dim_y = 1;
-           dim_x >= 1;
-           dim_x /= 2, dim_y *= 2, i++) {
-        if (dim_x == dim_y) {
+      for (int i = 0, x_width = n_ / 4, y_width = 1;
+           x_width >= 1;
+           x_width /= 2, y_width *= 2, i++) {
+        if (x_width == y_width) {
           i--;
           continue;
         }
-        int x_pos = sample.x * dim_x;
-        int y_pos = sample.y * dim_y;
+        int x_pos = sample.x * x_width;
+        int y_pos = sample.y * y_width;
 
-        if (partial_strata_[partial_strata_index][i][y_pos*dim_x + x_pos])
+        if (partial_strata_[partial_strata_index][i][y_pos*x_width + x_pos])
           return true;
       }
   }
@@ -352,6 +472,17 @@ double SampleSet::GetNearestNeighborDistSq(const Point& sample) const {
 void SampleSet::PickSubquadrantWithBalance(const int sample_index,
                                            int* x_pos,
                                            int* y_pos) {
+  // No balance for now...
+    bool use_subquad_1 = UniformRand() < 0.5;
+    if (use_subquad_1) {
+      *x_pos = *x_pos ^ 1;
+      *y_pos = *y_pos;
+    } else {
+      *x_pos = *x_pos;
+      *y_pos = *y_pos ^ 1;
+    }
+    return;
+
   const int partial_strata_index = GetPartialStrataIndex(sample_index);
   int x_pos1 = *x_pos ^ 1, y_pos1 = *y_pos;
   int x_pos2 = *x_pos , y_pos2 = *y_pos ^ 1;
@@ -448,7 +579,7 @@ std::unique_ptr<Point[]> GetPMJ02Samples(
 
 std::unique_ptr<Point[]> GetPMJ02SamplesWithBlueNoise(
     const int num_samples) {
-  return GenerateSamples(num_samples, 10);
+  return GenerateSamples(num_samples, 100);
 }
 
 }  // namespace pmj

@@ -80,6 +80,43 @@ class SampleSet {
   const int num_candidates_;
 };
 
+// This generates a sample within the grid position, verifying that it doesn't
+// overlap strata with any other sample.
+double Get1DStrataSample(const int pos,
+                         const int n,
+                         const double grid_size,
+                         const std::vector<bool>& strata) {
+  while (true) {
+    double val = UniformRand(pos*grid_size, (pos+1)*grid_size);
+    int strata_pos = val * n;
+    if (!strata[strata_pos]) {
+      return val;
+    }
+  }
+}
+
+void SampleSet::GenerateNewSample(const int sample_index,
+                                  const int x_pos,
+                                  const int y_pos) {
+  Point best_candidate;
+  double max_dist_sq = 0.0;
+  for (int i = 0; i < num_candidates_; i++) {
+    Point cand_sample =
+        {Get1DStrataSample(x_pos, n_, grid_size_, x_strata_),
+         Get1DStrataSample(y_pos, n_, grid_size_, y_strata_)};
+    if (num_candidates_ > 1) {
+      double dist_sq = GetNearestNeighborDistSq(cand_sample);
+      if (dist_sq > max_dist_sq) {
+        best_candidate = cand_sample;
+        max_dist_sq = dist_sq;
+      }
+    } else {
+      best_candidate = cand_sample;
+    }
+  }
+  AddSample(sample_index, best_candidate);
+}
+
 void SampleSet::SubdivideStrata() {
   const int old_n = n_;
 
@@ -104,43 +141,6 @@ void SampleSet::SubdivideStrata() {
   }
 }
 
-// This generates a sample within the grid position, verifying that it doesn't
-// overlap strata with any other sample.
-double get_1d_strata_sample(const int pos,
-                            const int n,
-                           const double grid_size,
-                           const std::vector<bool>& strata) {
-  while (true) {
-    double val = UniformRand(pos*grid_size, (pos+1)*grid_size);
-    int strata_pos = val * n;
-    if (!strata[strata_pos]) {
-      return val;
-    }
-  }
-}
-
-void SampleSet::GenerateNewSample(const int sample_index,
-                                  const int x_pos,
-                                  const int y_pos) {
-  Point best_candidate;
-  double max_dist_sq = 0.0;
-  for (int i = 0; i < num_candidates_; i++) {
-    Point cand_sample =
-        {get_1d_strata_sample(x_pos, n_, grid_size_, x_strata_),
-         get_1d_strata_sample(y_pos, n_, grid_size_, y_strata_)};
-    if (num_candidates_ > 1) {
-      double dist_sq = GetNearestNeighborDistSq(cand_sample);
-      if (dist_sq > max_dist_sq) {
-        best_candidate = cand_sample;
-        max_dist_sq = dist_sq;
-      }
-    } else {
-      best_candidate = cand_sample;
-    }
-  }
-  AddSample(sample_index, best_candidate);
-}
-
 void SampleSet::AddSample(const int i,
                           const Point& sample) {
   samples_[i] = sample;
@@ -152,7 +152,7 @@ void SampleSet::AddSample(const int i,
   sample_grid_[y_pos*dim_ + x_pos] = &(samples_[i]);
 }
 
-double dist_sq(double x1, double y1, double x2, double y2) {
+double DistSq(double x1, double y1, double x2, double y2) {
   double x_diff = x2-x1, y_diff = y2-y1;
   return (x_diff*x_diff)+(y_diff*y_diff);
 }
@@ -184,12 +184,12 @@ double SampleSet::GetNearestNeighborDistSq(const Point& sample) const {
       const Point* bottom_pt = sample_grid_[y_min*dim_+x_offset];
       if (top_pt != nullptr)
           min_dist_sq = std::min(min_dist_sq,
-                                 dist_sq(top_pt->x, top_pt->y,
-                                         sample.x, sample.y));
+                                 DistSq(top_pt->x, top_pt->y,
+                                        sample.x, sample.y));
       if (bottom_pt != nullptr)
           min_dist_sq = std::min(min_dist_sq,
-                                 dist_sq(bottom_pt->x, bottom_pt->y,
-                                         sample.x, sample.y));
+                                 DistSq(bottom_pt->x, bottom_pt->y,
+                                        sample.x, sample.y));
     }
     // Traverse left and right sides, excluding corners (hence the +1, -1).
     for (int y_offset = y_min+1; y_offset <= y_max-1; y_offset++) {
@@ -197,12 +197,12 @@ double SampleSet::GetNearestNeighborDistSq(const Point& sample) const {
       const Point* right_pt = sample_grid_[y_offset*dim_+x_max];
       if (left_pt != nullptr)
           min_dist_sq = std::min(min_dist_sq,
-                                 dist_sq(left_pt->x, left_pt->y,
-                                         sample.x, sample.y));
+                                 DistSq(left_pt->x, left_pt->y,
+                                        sample.x, sample.y));
       if (right_pt != nullptr)
           min_dist_sq = std::min(min_dist_sq,
-                                 dist_sq(right_pt->x, right_pt->y,
-                                         sample.x, sample.y));
+                                 DistSq(right_pt->x, right_pt->y,
+                                        sample.x, sample.y));
     }
 
     if (min_dist_sq < grid_radius_sq) {
@@ -291,15 +291,16 @@ std::vector<std::pair<int, int>> GetBalancedChoices(const SampleSet& sample_set,
       int x_pos = first_cells[2*quadrant_index];
       int y_pos = first_cells[2*quadrant_index+1];
 
-      // We'll either swap Y or X.
+      // We'll either swap X or Y.
       bool swap_x = false;
 
       int balance_x = choice_balance_x[col];
       int balance_y = choice_balance_y[row];
-      int x_remaining = quad_dim - num_visited_x[col] - abs(balance_x);
-      int y_remaining = quad_dim - num_visited_y[row] - abs(balance_y);
 
-      if (x_remaining == y_remaining && abs(balance_x) == abs(balance_y) &&
+      const int x_surplus = (quad_dim - num_visited_x[col]) - abs(balance_x);
+      const int y_surplus = (quad_dim - num_visited_y[row]) - abs(balance_y);
+
+      if (x_surplus == y_surplus && abs(balance_x) == abs(balance_y) &&
           balance_x != 0) {
         // If there's equal imbalance, we pick one of the balances randomly.
         if (UniformRand() < 0.5) balance_x = 0;
@@ -307,16 +308,16 @@ std::vector<std::pair<int, int>> GetBalancedChoices(const SampleSet& sample_set,
           balance_y = 0;
       }
 
-      if (x_remaining > y_remaining && balance_y != 0) {
+      if (x_surplus > y_surplus && balance_y != 0) {
         swap_x = (balance_y > 0) != (y_pos & 1);
-      } else if (y_remaining > x_remaining && balance_x != 0) {
+      } else if (y_surplus > x_surplus && balance_x != 0) {
         swap_x = (balance_x > 0) == (x_pos & 1);
       } else if (abs(balance_x) > abs(balance_y)) {
         swap_x = (balance_x > 0) == (x_pos & 1);
       } else if (abs(balance_y) > abs(balance_x)) {
         swap_x = (balance_y > 0) != (y_pos & 1);
       } else {
-        // balance_x == 0 && balance_y == 0 && x_remaining == y_remaining
+        // Everything is 0!
         if (UniformRand() < 0.5) swap_x = true;
       }
 
@@ -341,7 +342,6 @@ std::vector<std::pair<int, int>> GetBalancedChoices(const SampleSet& sample_set,
     if (n == 1 || attempt_successful) {
       break;
     }
-    std::cout << "Balance unsuccessful \n";
   }
 
   return choices;

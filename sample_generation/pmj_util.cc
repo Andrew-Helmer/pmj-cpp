@@ -35,7 +35,6 @@ void HilbertIndexToPos(int n, int d, int *x, int *y) {
       t /= 4;
   }
 }
-
 }  // namespace
 
 /*

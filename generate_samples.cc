@@ -7,8 +7,8 @@
 // $  ./generate_samples --algorithm='pmj02bn' --n=4096
 //
 // Example usage with bazel:
-// $  bazel build -c opt :all
-// $  ./bazel-bin/generate_samples --algorithm='pmj02bn' --n=4096
+// $  bazel build -c opt :generate_samples
+// $  ./bazel-bin/generate_samples --algorithm=pmj02bn --n=4096
 #include <array>
 #include <iostream>
 #include <memory>

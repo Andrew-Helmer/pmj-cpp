@@ -14,7 +14,10 @@
 
 namespace pmj {
 namespace {
-
+/*
+ * The SampleSet is a class that contains the generated samples, as well as the
+ * currently populated strata.
+ */
 class SampleSet {
  public:
   explicit SampleSet(const int num_samples,
@@ -23,13 +26,12 @@ class SampleSet {
                        num_candidates_(num_candidates) {
     samples_ = std::make_unique<Point[]>(num_samples);
 
-    x_strata_.resize(num_samples);
-    y_strata_.resize(num_samples);
-
     int grid_memory_size = 1;
     while (grid_memory_size < num_samples)
       grid_memory_size <<= 2;
     sample_grid_ = std::make_unique<const Point*[]>(grid_memory_size);
+    x_strata_.resize(grid_memory_size);
+    y_strata_.resize(grid_memory_size);
   }
 
   // This generates a new sample at the current index, given the X position
@@ -44,9 +46,7 @@ class SampleSet {
 
   // Get all the samples at the end.
   std::unique_ptr<Point[]> ReleaseSamples() {
-    auto samples = std::make_unique<Point[]>(num_samples);
-    samples.swap(samples_);
-    return samples;
+    return std::move(samples_);
   }
 
   const Point& sample(const int sample_index) const {

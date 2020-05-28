@@ -1,4 +1,11 @@
-// Copyright 2020 Andrew Helmer.
+/*
+ * Utility to test the performance of various sampling algorithms. You must use
+ * bazel to build this, because it uses the ABSL library, and the Bazel build
+ * downloads this from Github.
+ *
+ * Example command:
+ *   bazel run -c opt test_performance -- --n=65536 --runs=64 --algorithms=pmj,pmj02
+ */
 #include <iostream>
 #include <chrono>
 #include <string>
@@ -11,9 +18,9 @@
 #include "sample_generation/pmj.h"
 #include "sample_generation/pmj02.h"
 
-ABSL_FLAG(int, num_samples, 1024,
+ABSL_FLAG(int, n, 65536,
     "The number of samples to generate in each run.");
-ABSL_FLAG(int, runs, 8, "The number of runs to make for each algorithm");
+ABSL_FLAG(int, runs, 16, "The number of runs to make for each algorithm");
 ABSL_FLAG(std::string, algorithms, "all",
     "Comma-separated list of algorithms to run. Use 'all' for all. Options are"
     "'pj', 'pmj', 'pmjbn', 'pmj02', 'pmj02bn'");
@@ -31,8 +38,8 @@ sample_f GetSamplingFunction(const string& algorithm) {
       algorithm == "pmjbn" ?
           &pmj::GetProgMultiJitteredSamplesWithBlueNoise :
       algorithm == "pmj02" ? &pmj::GetPMJ02Samples :
-      algorithm == "pmj02bn" ? &pmj::GetPMJ02SamplesWithBlueNoise
-      : throw std::invalid_argument(algorithm + " is not a valid algorithm.");
+      algorithm == "pmj02bn" ? &pmj::GetPMJ02SamplesWithBlueNoise :
+      throw std::invalid_argument(algorithm + " is not a valid algorithm.");
 }
 
 int main(int argc, char *argv[]) {
@@ -47,18 +54,24 @@ int main(int argc, char *argv[]) {
 
   for (const string& algorithm : algorithms_list) {
     sample_f sample_func = GetSamplingFunction(algorithm);
-    chrono::duration<double> total_time;
+    chrono::duration<double> total_time(0);
     for (int i = 0; i < absl::GetFlag(FLAGS_runs); i++) {
       auto start = chrono::high_resolution_clock::now();
-      auto samples = (*sample_func)(absl::GetFlag(FLAGS_num_samples));
+      auto samples = (*sample_func)(absl::GetFlag(FLAGS_n));
       auto end = chrono::high_resolution_clock::now();
       total_time += (end - start);
     }
 
-    double samples_per_second = 1000000.0 * (absl::GetFlag(FLAGS_num_samples) * absl::GetFlag(FLAGS_runs)) /
-        (chrono::duration_cast<chrono::microseconds>(total_time).count());
+    const double total_microseconds =
+        chrono::duration_cast<chrono::microseconds>(total_time).count();
+    double samples_per_second = 1000000.0
+        * (absl::GetFlag(FLAGS_n) * absl::GetFlag(FLAGS_runs))
+        / total_microseconds;
 
     std::cout << algorithm << ": " << samples_per_second << " samples/s\n";
+    std::cout << "\t"
+              << "avg " << total_microseconds/1000.0/absl::GetFlag(FLAGS_runs)
+              << "ms for " << absl::GetFlag(FLAGS_n)  << " samples" << "\n";
   }
 
   return 0;

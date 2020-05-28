@@ -6,7 +6,7 @@
 #include <iostream>
 #include <memory>
 #include <random>
-#include <signal.h>
+#include <stack>
 #include <utility>
 #include <vector>
 
@@ -47,9 +47,7 @@ class SampleSet {
 
   // Get all the samples at the end.
   std::unique_ptr<Point[]> ReleaseSamples() {
-    auto samples = std::make_unique<Point[]>(num_samples);
-    samples.swap(samples_);
-    return samples;
+    return std::move(samples_);
   }
 
   const Point& sample(const int sample_index) const {
@@ -66,14 +64,6 @@ class SampleSet {
   // Given a sample, sets all the correct strata to true.
   void UpdateStrata(const Point& sample, const int partial_strata_index = -1);
 
-  std::pair<vector<int>, vector<int>> GetValidStrata(
-      const int x_pos, const int y_pos);
-
-  void InitializeSampleTrees(const int x_pos,
-                             const int y_pos,
-                             vector<bool>* x_tree,
-                             vector<bool>* y_tree);
-
   Point GetCandidateSample(const int x_pos,
                            const int y_pos,
                            const vector<int>& valid_x_strata,
@@ -86,10 +76,9 @@ class SampleSet {
 
   std::unique_ptr<Point[]> samples_;
 
-  // Contains all strata of elementary (0,2) intervals, except for the grid
-  // where the stratum width and height are the same. Each value is true/false
+  // Contains all strata of elementary (0,2) intervals. Each value is true/false
   // for if a sample resides there.
-  vector<vector<bool>> strata_ {};
+  vector<vector<bool>> strata_ {{false}};
   // This is the same as above, but it's only used for odd powers of two.
   vector<vector<bool>> partial_strata_[2] {};
 
@@ -99,7 +88,6 @@ class SampleSet {
   int n_ = 1;  // Number of samples in the next pass.
   bool is_power_of_4_ = true;
   int dim_ = 1;  // Number of cells in one dimension in next pass, i.e. sqrt(n).
-  double grid_size_ = 1.0;  // 1.0 / dim_
 
   // Number of candidates to use for best-candidate sampling.
   const int num_candidates_;
@@ -112,14 +100,11 @@ void SampleSet::SubdivideStrata() {
   is_power_of_4_ = !is_power_of_4_;
   if (!is_power_of_4_) {
     dim_ *= 2;
-    grid_size_ *= 0.5;
   }
 
-  // For the first sample this is 1x1 (no strata). For sample 2 it's 1x2 and
-  // 2x1. For samples 3-4 it's 4x1 and 1x4. For samples 5-8 it's 8x1, 2x4, 4x2,
-  // 1x8. So it only goes up after reaching an odd power of two.
-  if (!is_power_of_4_)
-    strata_.resize(strata_.size()+2);
+  // For the first sample this is 1x1. For sample 2 it's 1x2 and 2x1. For
+  // samples 3-4 it's 4x1, 2x2, and 1x4. So every time it goes up by one.
+  strata_.resize(strata_.size()+1);
 
   std::fill(strata_.begin(), strata_.end(), vector<bool>(n_, false));
 
@@ -158,12 +143,12 @@ Point SampleSet::GetCandidateSample(const int x_pos,
   int y_strata_index = valid_y_strata[UniformInt(0, valid_y_strata.size()-1)];
 
   double strata_width = 1.0 / n_;
-  int x_strata_pos = x_pos*(n_ / dim_) + x_strata_index;
-  int y_strata_pos = y_pos*(n_ / dim_) + y_strata_index;
-  sample.x = UniformRand(strata_width*x_strata_pos,
-                         strata_width*(x_strata_pos+1));
-  sample.y = UniformRand(strata_width*y_strata_pos,
-                         strata_width*(y_strata_pos+1));
+  sample.x = UniformRand(strata_width*x_strata_index,
+                         strata_width*(x_strata_index+1));
+  sample.y = UniformRand(strata_width*y_strata_index,
+                         strata_width*(y_strata_index+1));
+
+  assert(sample.x >= 0.0 && sample.x < 1.0 && sample.y >= 0 && sample.y < 1.0);
 
   return sample;
 }
@@ -190,115 +175,58 @@ void SampleSet::GenerateFirstSample() {
   AddSample(0, sample);
 }
 
-void InitializeXTree(vector<bool>* tree,
-                     const int tree_index,
-                     const int x_pos,
-                     const int y_pos,
-                     const int strata_index,
-                     const int strata_width,
-                     const vector<vector<bool>>& strata) {
-  (*tree)[tree_index] =
-      strata[strata_index][y_pos*strata_width + x_pos];
+void GetXStrata(const int x_pos,
+                const int y_pos,
+                const int strata_index,
+                const vector<vector<bool>>& strata,
+                vector<int>* x_strata) {
+  const int strata_x_dim = 1 << (strata.size() - strata_index - 1);
+  const bool is_occupied =
+      strata[strata_index][y_pos*strata_x_dim + x_pos];
 
-  if (!(*tree)[tree_index] && (2*tree_index+1 < tree->size())) {
-    InitializeXTree(tree,
-                    2*tree_index+1,
-                    x_pos * 2,
-                    y_pos / 2,
-                    strata_index - 1,
-                    strata_width * 2,
-                    strata);
-    InitializeXTree(tree,
-                    2*tree_index+2,
-                    x_pos * 2 + 1,
-                    y_pos / 2,
-                    strata_index - 1,
-                    strata_width * 2,
-                    strata);
-    (*tree)[tree_index] =
-        (*tree)[2*tree_index+1] && (*tree)[2*tree_index+2];
-  }
-}
-
-void InitializeYTree(vector<bool>* tree,
-                     const int tree_index,
-                     const int x_pos,
-                     const int y_pos,
-                     const int strata_index,
-                     const int strata_width,
-                     const vector<vector<bool>>& strata) {
-  (*tree)[tree_index] =
-      strata[strata_index][y_pos*strata_width + x_pos];
-
-  if (!(*tree)[tree_index] && (2*tree_index+1 < tree->size())) {
-    InitializeYTree(tree,
-                    2*tree_index+1,
-                    x_pos / 2,
-                    y_pos * 2,
-                    strata_index + 1,
-                    strata_width / 2,
-                    strata);
-    InitializeYTree(tree,
-                    2*tree_index+2,
-                    x_pos / 2,
-                    y_pos * 2 + 1,
-                    strata_index + 1,
-                    strata_width / 2,
-                    strata);
-    (*tree)[tree_index] =
-        (*tree)[2*tree_index+1] && (*tree)[2*tree_index+2];
-  }
-}
-
-void SampleSet::InitializeSampleTrees(const int x_pos,
-                                      const int y_pos,
-                                      vector<bool>* x_tree,
-                                      vector<bool>* y_tree) {
-  if (is_power_of_4_) {
-    // Unfortunately we have to do this to get around the fact that there isn't
-    // a square strata in our array of strata.
-    InitializeXTree(
-        x_tree, 1, x_pos*2, y_pos/2, strata_.size()/2-1, dim_*2, strata_);
-    InitializeXTree(
-        x_tree, 2, x_pos*2+1, y_pos/2, strata_.size()/2-1, dim_*2, strata_);
-    InitializeYTree(
-        y_tree, 1, x_pos/2, y_pos*2, strata_.size()/2, dim_/2, strata_);
-    InitializeYTree(
-        y_tree, 2, x_pos/2, y_pos*2+1, strata_.size()/2, dim_/2, strata_);
-  } else {
-    InitializeXTree(
-        x_tree, 0, x_pos, y_pos/2, strata_.size()/2-1, dim_, strata_);
-    InitializeYTree(
-        y_tree, 0, x_pos/2, y_pos, strata_.size()/2, dim_/2, strata_);
-  }
-}
-
-void GetValidStrataRecursive(const vector<bool>& tree,
-                             const int tree_index,
-                             vector<int>* valid_offsets) {
-  if (!tree[tree_index]) {
-    if (tree_index*2 + 1 >= tree.size()) {
-      // Add the corresponding 1D strata index.
-      valid_offsets->push_back(tree_index - tree.size() / 2);
+  if (!is_occupied) {
+    if (strata_index == 0) {
+      // We're at the Nx1 leaf.
+      x_strata->push_back(x_pos);
     } else {
-      GetValidStrataRecursive(tree, tree_index*2 + 1, valid_offsets);
-      GetValidStrataRecursive(tree, tree_index*2 + 2, valid_offsets);
+      GetXStrata(x_pos * 2, y_pos / 2, strata_index - 1, strata, x_strata);
+      GetXStrata(x_pos * 2 + 1, y_pos / 2, strata_index - 1, strata, x_strata);
+    }
+  }
+}
+void GetYStrata(const int x_pos,
+                const int y_pos,
+                const int strata_index,
+                const vector<vector<bool>>& strata,
+                vector<int>* y_strata) {
+  const int strata_x_dim = 1 << (strata.size() - strata_index - 1);
+  const bool is_occupied =
+      strata[strata_index][y_pos*strata_x_dim + x_pos];
+
+  if (!is_occupied) {
+    if (strata_x_dim == 1) {
+      // We're at the 1xN leaf.
+      y_strata->push_back(y_pos);
+    } else {
+      GetYStrata(x_pos / 2, y_pos * 2, strata_index + 1, strata, y_strata);
+      GetYStrata(x_pos / 2, y_pos * 2 + 1, strata_index + 1, strata, y_strata);
     }
   }
 }
 
-std::pair<vector<int>, vector<int>> SampleSet::GetValidStrata(
-    const int x_pos, const int y_pos) {
-  std::pair<vector<int>, vector<int>> strata = {{}, {}};
+std::pair<vector<int>, vector<int>> GetValidStrata(
+    const int x_pos, const int y_pos, const vector<vector<bool>>& strata) {
+  std::pair<vector<int>, vector<int>> valid_strata = {{}, {}};
 
-  vector<bool> x_tree((n_/dim_)*2 - 1);
-  vector<bool> y_tree((n_/dim_)*2 - 1);
-  InitializeSampleTrees(x_pos, y_pos, &x_tree, &y_tree);
+  if (strata.size() % 2 == 1) {
+    GetXStrata(x_pos, y_pos, strata.size()/2, strata, &valid_strata.first);
+    GetYStrata(x_pos, y_pos, strata.size()/2, strata, &valid_strata.second);
+  } else {
+    GetXStrata(x_pos, y_pos/2, strata.size()/2-1, strata, &valid_strata.first);
+    GetYStrata(x_pos/2, y_pos, strata.size()/2, strata, &valid_strata.second);
+  }
 
-  GetValidStrataRecursive(x_tree, 0, &(strata.first));
-  GetValidStrataRecursive(y_tree, 0, &(strata.second));
-
-  return strata;
+  return valid_strata;
 }
 
 void SampleSet::GenerateNewSample(const int sample_index,
@@ -310,7 +238,7 @@ void SampleSet::GenerateNewSample(const int sample_index,
   int partial_strata_index = GetPartialStrataIndex(sample_index);
 
   const std::pair<vector<int>, vector<int>> valid_strata =
-      GetValidStrata(x_pos, y_pos);
+      GetValidStrata(x_pos, y_pos, strata_);
 
   for (int i = 0; i < num_candidates_; i++) {
     Point cand_sample = GetCandidateSample(
@@ -334,10 +262,6 @@ void SampleSet::UpdateStrata(const Point& sample,
   for (int i = 0, x_width = n_, y_width = 1;
        x_width >= 1;
        x_width /= 2, y_width *= 2, i++) {
-    if (x_width == y_width) {
-      i--;
-      continue;
-    }
     int x_pos = sample.x * x_width;
     int y_pos = sample.y * y_width;
     strata_[i][y_pos*x_width + x_pos] = true;
@@ -348,10 +272,6 @@ void SampleSet::UpdateStrata(const Point& sample,
     for (int i = 0, x_width = n_ / 4, y_width = 1;
          x_width >= 1;
          x_width /= 2, y_width *= 2, i++) {
-      if (x_width == y_width) {
-        i--;
-        continue;
-      }
       int x_pos = sample.x * x_width;
       int y_pos = sample.y * y_width;
 
@@ -365,10 +285,6 @@ bool SampleSet::IsStrataOccupied(const Point& sample,
   for (int i = 0, x_width = n_, y_width = 1;
        x_width >= 1;
        x_width /= 2, y_width *= 2, i++) {
-    if (x_width == y_width) {
-      i--;
-      continue;
-    }
     int x_pos = sample.x * x_width;
     int y_pos = sample.y * y_width;
 
@@ -410,45 +326,45 @@ void SampleSet::PickSubquadrantWithBalance(const int sample_index,
                                            int* x_pos,
                                            int* y_pos) {
   // No balance for now...
-    bool use_subquad_1 = UniformRand() < 0.5;
-    if (use_subquad_1) {
-      *x_pos = *x_pos ^ 1;
-      *y_pos = *y_pos;
-    } else {
-      *x_pos = *x_pos;
-      *y_pos = *y_pos ^ 1;
-    }
-    return;
-
-  const int partial_strata_index = GetPartialStrataIndex(sample_index);
-  int x_pos1 = *x_pos ^ 1, y_pos1 = *y_pos;
-  int x_pos2 = *x_pos , y_pos2 = *y_pos ^ 1;
-  while (true) {
-    Point sample1 = {UniformRand(x_pos1*grid_size_, (x_pos1+1)*grid_size_),
-                     UniformRand(y_pos1*grid_size_, (y_pos1+1)*grid_size_)};
-    Point sample2 = {UniformRand(x_pos2*grid_size_, (x_pos2+1)*grid_size_),
-                     UniformRand(y_pos2*grid_size_, (y_pos2+1)*grid_size_)};
-    if (!IsStrataOccupied(sample1, partial_strata_index)) {
-      if (!IsStrataOccupied(sample2, partial_strata_index)) {
-        bool use_subquad_1 = UniformRand() < 0.5;
-        if (use_subquad_1) {
-          *x_pos = x_pos1;
-          *y_pos = y_pos1;
-        } else {
-          *x_pos = x_pos2;
-          *y_pos = y_pos2;
-        }
-        return;
-      }
-      *x_pos = x_pos1;
-      *y_pos = y_pos1;
-      return;
-    } else if (!IsStrataOccupied(sample2, partial_strata_index)) {
-      *x_pos = x_pos2;
-      *y_pos = y_pos2;
-      return;
-    }
+  bool use_subquad_1 = UniformRand() < 0.5;
+  if (use_subquad_1) {
+    *x_pos = *x_pos ^ 1;
+    *y_pos = *y_pos;
+  } else {
+    *x_pos = *x_pos;
+    *y_pos = *y_pos ^ 1;
   }
+  return;
+
+  // const int partial_strata_index = GetPartialStrataIndex(sample_index);
+  // int x_pos1 = *x_pos ^ 1, y_pos1 = *y_pos;
+  // int x_pos2 = *x_pos , y_pos2 = *y_pos ^ 1;
+  // while (true) {
+  //   Point sample1 = {UniformRand(x_pos1*grid_size_, (x_pos1+1)*grid_size_),
+  //                    UniformRand(y_pos1*grid_size_, (y_pos1+1)*grid_size_)};
+  //   Point sample2 = {UniformRand(x_pos2*grid_size_, (x_pos2+1)*grid_size_),
+  //                    UniformRand(y_pos2*grid_size_, (y_pos2+1)*grid_size_)};
+  //   if (!IsStrataOccupied(sample1, partial_strata_index)) {
+  //     if (!IsStrataOccupied(sample2, partial_strata_index)) {
+  //       bool use_subquad_1 = UniformRand() < 0.5;
+  //       if (use_subquad_1) {
+  //         *x_pos = x_pos1;
+  //         *y_pos = y_pos1;
+  //       } else {
+  //         *x_pos = x_pos2;
+  //         *y_pos = y_pos2;
+  //       }
+  //       return;
+  //     }
+  //     *x_pos = x_pos1;
+  //     *y_pos = y_pos1;
+  //     return;
+  //   } else if (!IsStrataOccupied(sample2, partial_strata_index)) {
+  //     *x_pos = x_pos2;
+  //     *y_pos = y_pos2;
+  //     return;
+  //   }
+  // }
 }
 
 std::unique_ptr<Point[]> GenerateSamples(
@@ -516,7 +432,7 @@ std::unique_ptr<Point[]> GetPMJ02Samples(
 
 std::unique_ptr<Point[]> GetPMJ02SamplesWithBlueNoise(
     const int num_samples) {
-  return GenerateSamples(num_samples, 20);
+  return GenerateSamples(num_samples, 10);
 }
 
 }  // namespace pmj

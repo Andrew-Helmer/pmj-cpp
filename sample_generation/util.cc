@@ -1,8 +1,8 @@
 // Copyright 2020 Andrew Helmer
 #include "sample_generation/util.h"
 
+#include <algorithm>
 #include <random>
-#include <signal.h>
 #include <utility>
 #include <vector>
 
@@ -28,7 +28,7 @@ int UniformInt(int min, int max) {
 }
 
 namespace {
-double DistSq(double x1, double y1, double x2, double y2) {
+inline double DistSq(double x1, double y1, double x2, double y2) {
   double x_diff = x2-x1, y_diff = y2-y1;
   return (x_diff*x_diff)+(y_diff*y_diff);
 }

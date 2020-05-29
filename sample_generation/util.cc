@@ -36,14 +36,13 @@ inline double DistSq(double x1, double y1, double x2, double y2) {
   double x_diff = x2-x1, y_diff = y2-y1;
   return (x_diff*x_diff)+(y_diff*y_diff);
 }
-}  // namespace
 
 double GetNearestNeighborDistSq(const Point& sample,
                                 const Point* sample_grid[],
                                 const int dim) {
   // This function works by using the sample grid, since we know that the points
-  // are well-distributed with at most one point in each cell. Much easier than
-  // using any of the other data structures!
+  // are well-distributed with at most one point in each cell. Not the fastest
+  // way to do this, but easy to implement and not horribly slow.
   //
   // Anyway start with the cells that are adjacent to our current cell and each
   // loop iteration we move outwards. We keep a track of the "grid radius",
@@ -52,7 +51,7 @@ double GetNearestNeighborDistSq(const Point& sample,
   // can't find any nearer points.
   const int x_pos = sample.x * dim;
   const int y_pos = sample.y * dim;
-  double min_dist_sq = 1.0;
+  double min_dist_sq = sqrt(2.0);
   const double grid_size = 1.0 / dim;
   for (int i = 1; i <= dim; i++) {
     // We add sqrt(0.5) to account for the fact that the point might not be
@@ -97,6 +96,29 @@ double GetNearestNeighborDistSq(const Point& sample,
   }
 
   return min_dist_sq;
+}
+}  // namespace
+
+Point GetBestCandidateOfSamples(const std::vector<Point>& candidates,
+                                const Point* sample_grid[],
+                                const int dim) {
+  // Hypothetically, it could be faster to search all the points in parallel,
+  // culling points as we go, but a naive implementation of this was only a tiny
+  // bit faster, and the code was uglier, so we'll leave it for now.
+  Point best_candidate;
+  double max_dist_sq = 0.0;
+
+  for (int i = 0; i < candidates.size(); i++) {
+    Point cand_sample = candidates[i];
+    double dist_sq =
+        GetNearestNeighborDistSq(cand_sample, sample_grid, dim);
+    if (dist_sq > max_dist_sq) {
+      best_candidate = cand_sample;
+      max_dist_sq = dist_sq;
+    }
+  }
+
+  return best_candidate;
 }
 
 sample_f GetSamplingFunction(const std::string& algorithm) {

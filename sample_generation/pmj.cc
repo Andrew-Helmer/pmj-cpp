@@ -60,6 +60,10 @@ class SampleSet {
   const int num_samples;
 
  private:
+  // Generates a valid sample at the given cell position, subject to
+  // stratification.
+  Point GetCandidateSample(const int x_pos, const int y_pos);
+
   // Adds a new point at index i. Updates the necessary data structures.
   void AddSample(const int i, const Point& sample);
 
@@ -100,25 +104,26 @@ double Get1DStrataSample(const int pos,
   }
 }
 
+Point SampleSet::GetCandidateSample(const int x_pos,
+                                    const int y_pos) {
+  return {Get1DStrataSample(x_pos, n_, grid_size_, x_strata_),
+          Get1DStrataSample(y_pos, n_, grid_size_, y_strata_)};
+}
+
 void SampleSet::GenerateNewSample(const int sample_index,
                                   const int x_pos,
                                   const int y_pos) {
   Point best_candidate;
-  double max_dist_sq = 0.0;
-  for (int i = 0; i < num_candidates_; i++) {
-    Point cand_sample =
-        {Get1DStrataSample(x_pos, n_, grid_size_, x_strata_),
-         Get1DStrataSample(y_pos, n_, grid_size_, y_strata_)};
-    if (num_candidates_ > 1) {
-      double dist_sq =
-          GetNearestNeighborDistSq(cand_sample, sample_grid_.get(), dim_);
-      if (dist_sq > max_dist_sq) {
-        best_candidate = cand_sample;
-        max_dist_sq = dist_sq;
-      }
-    } else {
-      best_candidate = cand_sample;
+  if (num_candidates_ <= 1) {
+    best_candidate = GetCandidateSample(x_pos, y_pos);
+  } else {
+    std::vector<Point> candidate_samples(num_candidates_);
+    for (int i = 0; i < num_candidates_; i++) {
+      candidate_samples[i] = GetCandidateSample(x_pos, y_pos);
     }
+
+    best_candidate = GetBestCandidateOfSamples(
+        candidate_samples, sample_grid_.get(), dim_);
   }
   AddSample(sample_index, best_candidate);
 }

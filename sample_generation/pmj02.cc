@@ -236,7 +236,6 @@ void SampleSet::GenerateNewSample(const int sample_index,
                                   const int x_pos,
                                   const int y_pos) {
   Point best_candidate;
-  double max_dist_sq = 0.0;
 
   vector<vector<bool>>* strata = &strata_;
   if (use_subsequence_strata_) {
@@ -245,19 +244,18 @@ void SampleSet::GenerateNewSample(const int sample_index,
   const std::pair<vector<int>, vector<int>>& valid_strata =
       GetValidStrata(x_pos, y_pos, *strata);
 
-  for (int i = 0; i < num_candidates_; i++) {
-    Point cand_sample = GetCandidateSample(
+  if (num_candidates_ <= 1) {
+    best_candidate = GetCandidateSample(
         x_pos, y_pos, valid_strata.first, valid_strata.second);
-    if (num_candidates_ > 1) {
-      double dist_sq =
-          GetNearestNeighborDistSq(cand_sample, sample_grid_.get(), dim_);
-      if (dist_sq > max_dist_sq) {
-        best_candidate = cand_sample;
-        max_dist_sq = dist_sq;
-      }
-    } else {
-      best_candidate = cand_sample;
+  } else {
+    vector<Point> candidate_samples(num_candidates_);
+    for (int i = 0; i < num_candidates_; i++) {
+      candidate_samples[i] = GetCandidateSample(
+          x_pos, y_pos, valid_strata.first, valid_strata.second);
     }
+
+    best_candidate = GetBestCandidateOfSamples(
+        candidate_samples, sample_grid_.get(), dim_);
   }
   AddSample(sample_index, best_candidate);
 }
@@ -364,7 +362,7 @@ std::unique_ptr<Point[]> GetPMJ02Samples(
 
 std::unique_ptr<Point[]> GetPMJ02SamplesWithBlueNoise(
     const int num_samples) {
-  return GenerateSamples(num_samples, /*num_candidates=*/20);
+  return GenerateSamples(num_samples, /*num_candidates=*/10);
 }
 
 // These functions are just for experimentation, no reason to actually use them.

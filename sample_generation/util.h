@@ -20,7 +20,7 @@ double UniformRand(double min = 0.0, double max = 1.0);
 
 int UniformInt(int min, int max);
 
-double GetNearestNeighborDistSq(const Point& sample,
+Point GetBestCandidateOfSamples(const std::vector<Point>& candidates,
                                 const Point* sample_grid[],
                                 const int dim);
 

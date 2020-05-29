@@ -1,5 +1,5 @@
 // Copyright 2020 Andrew Helmer
-#include "sample_generation/pmj_util.h"
+#include "sample_generation/balance_util.h"
 
 #include <utility>
 #include <vector>

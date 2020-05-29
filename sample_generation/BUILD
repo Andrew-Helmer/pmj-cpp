@@ -17,6 +17,13 @@ cc_library(
 )
 
 cc_library(
+    name = "balance_util",
+    srcs = ["balance_util.cc"],
+    hdrs = ["balance_util.h"],
+    deps = [":util"]
+)
+
+cc_library(
     name = "pj",
     srcs = ["pj.cc"],
     hdrs = ["pj.h"],
@@ -28,16 +35,9 @@ cc_library(
     srcs = ["pmj.cc"],
     hdrs = ["pmj.h"],
     deps = [
-        ":pmj_util",
+        ":balance_util",
         ":util",
     ]
-)
-
-cc_library(
-    name = "pmj_util",
-    srcs = ["pmj_util.cc"],
-    hdrs = ["pmj_util.h"],
-    deps = [":util"]
 )
 
 cc_library(
@@ -45,7 +45,7 @@ cc_library(
     srcs = ["pmj02.cc"],
     hdrs = ["pmj02.h"],
     deps = [
-        ":pmj_util",
+        ":balance_util",
         ":util",
     ]
 )

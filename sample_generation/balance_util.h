@@ -1,6 +1,6 @@
 // Copyright 2020 Andrew Helmer.
-#ifndef SAMPLE_GENERATION_PMJ_UTIL_H_
-#define SAMPLE_GENERATION_PMJ_UTIL_H_
+#ifndef SAMPLE_GENERATION_BALANCE_UTIL_H_
+#define SAMPLE_GENERATION_BALANCE_UTIL_H_
 
 #include <utility>
 #include <vector>
@@ -21,4 +21,4 @@ namespace pmj {
       const int dim);
 }  // namespace pmj
 
-#endif  // SAMPLE_GENERATION_PMJ_UTIL_H_
+#endif  // SAMPLE_GENERATION_BALANCE_UTIL_H_

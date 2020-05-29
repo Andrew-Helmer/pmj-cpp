@@ -54,7 +54,7 @@ void GenPJSamplesForQuadrant(
 
   samples[2*n+i] = GetSample(new_x_pos, new_y_pos, grid_size);
 
-  // Do the diagonal of this one.
+  // Do the diagonal of the previous sample.
   if (3*n+i > num_samples) {
     return;
   }

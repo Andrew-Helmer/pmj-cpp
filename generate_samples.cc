@@ -1,4 +1,3 @@
-// Copyright 2020 Andrew Helmer.
 // This simple function takes only two command-line arguments, --algorithm and
 // --n. Algorithm can be one of "pj", "pmj", "pmjbn", "pmj02", or "pmj02bn". By
 // default it is pmj02. n must be an integer greater than zero.
@@ -13,12 +12,12 @@
 #include <iostream>
 #include <memory>
 #include <random>
-#include <signal.h>
 #include <utility>
 
 #include "sample_generation/pj.h"
 #include "sample_generation/pmj.h"
 #include "sample_generation/pmj02.h"
+#include "sample_generation/util.h"
 
 using std::string;
 
@@ -55,14 +54,8 @@ int main(int argc, char* argv[]) {
   int n_samples;
   string algorithm;
   GetArguments(argc, argv, &n_samples, &algorithm);
-  std::unique_ptr<pmj::Point[]> samples =
-      algorithm == "pj" ? pmj::GetProgJitteredSamples(n_samples) :
-      algorithm == "pmj" ? pmj::GetProgMultiJitteredSamples(n_samples) :
-      algorithm == "pmjbn" ?
-          pmj::GetProgMultiJitteredSamplesWithBlueNoise(n_samples) :
-      algorithm == "pmj02" ? pmj::GetPMJ02Samples(n_samples) :
-      algorithm == "pmj02bn" ? pmj::GetPMJ02SamplesWithBlueNoise(n_samples)
-      : throw std::invalid_argument(algorithm + " is not a valid algorithm.");
+  auto* sample_func = pmj::GetSamplingFunction(algorithm);
+  std::unique_ptr<pmj::Point[]> samples = (*sample_func)(n_samples);
 
   for (int i = 0; i < n_samples; i++) {
     const auto& sample = samples[i];

@@ -74,10 +74,14 @@ std::vector<double> GetErrors(const dist_f dist_func,
       double val = (*dist_func)(points[sample_idx]);
       avg = val/(sample_idx+1.0)
           + avg*static_cast<double>(sample_idx)/(sample_idx+1.0);
-      double error = abs(avg - ground_truth);
+      double error = avg - ground_truth;
       avg_error[sample_idx] +=
-          error / (static_cast<double>(num_runs));
+          (error*error) / (static_cast<double>(num_runs));
     }
+  }
+
+  for (int sample_idx = 0; sample_idx < num_samples; sample_idx++) {
+    avg_error[sample_idx] = sqrt(avg_error[sample_idx]);
   }
 
   return avg_error;

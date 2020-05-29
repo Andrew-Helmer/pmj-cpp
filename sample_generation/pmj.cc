@@ -1,4 +1,22 @@
-// Copyright 2020 Andrew Helmer
+/*
+ * Copyright (C) Andrew Helmer 2020.
+ *
+ * Licensed under MIT Open-Source License: see LICENSE. If you use this code, or
+ * you generate sample sets that you use, I'd appreciate a credit in the source
+ * code of your software. Just my name and/or a link to the GitHub project.
+ * Thanks!
+ *
+ * Implementation of PMJ sequences from
+ * "Progressive Multi-Jittered Sample Sequences", Christensen et al. 2018. It
+ * could be optimized considerably, by changing the strata to be binary trees
+ * and improving the best candidate algorithm (which is impemented in util.cc).
+ * Still the non-best-candidate sequences run at about 2 million samples/sec on
+ * my 2017 Macbook Pro.
+*
+ * If you're reading this code for the first time and want to understand the
+ * algorithm, start with the function "GenerateSamples".
+ *
+ */
 #include "sample_generation/pmj.h"
 
 #include <algorithm>

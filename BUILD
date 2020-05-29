@@ -1,4 +1,15 @@
 cc_binary(
+    name = "analyze_error",
+    srcs = ["analyze_error.cc"],
+    deps = [
+    	"//sample_generation:sample_generation",
+    	"@com_google_absl//absl/strings",
+    	"@com_google_absl//absl/flags:flag",
+    	"@com_google_absl//absl/flags:parse",
+    ],
+)
+
+cc_binary(
     name = "generate_samples",
     srcs = ["generate_samples.cc"],
     deps = [

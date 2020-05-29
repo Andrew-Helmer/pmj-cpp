@@ -32,9 +32,9 @@ ABSL_FLAG(std::string, pyfile, "",
     "If set, this will write all the analysis data into a valid python file, "
     "rather than outputting it. This python file can be executed to create "
     "a dictionary representing all the results.");
-ABSL_FLAG(int, max_n, 1024,
+ABSL_FLAG(int, max_n, 2048,
     "The number of samples to generate in each run.");
-ABSL_FLAG(int, runs, 1024, "The number of runs to make for each algorithm");
+ABSL_FLAG(int, runs, 2048, "The number of runs to make for each algorithm");
 
 namespace {
 

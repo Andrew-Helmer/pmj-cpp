@@ -8,15 +8,28 @@
 #include "sample_generation/util.h"
 
 namespace pmj {
-  std::vector<std::pair<int, int>> GetBalancedChoicesRandom(
+  typedef std::vector<std::pair<int, int>> (*subquad_fn)(
+      const Point samples[], const int dim);
+  /*
+   * Pick which subquadrants to use randomly.
+   */
+  std::vector<std::pair<int, int>> GetSubQuadrantsRandomly(
       const Point samples[],
       const int dim);
 
-  std::vector<std::pair<int, int>> GetBalancedChoicesOxPlowing(
-      const Point samples[],
-      const int dim);
+  /*
+   * This will randomly choose once to swap X or swap Y, but will then make that
+   * same choice for EVERY value.
+   */
+  std::vector<std::pair<int, int>> GetSubQuadrantsConsistently(
+    const Point samples[],
+    const int dim);
 
-  std::vector<std::pair<int, int>> GetBalancedChoicesHilbert(
+  /*
+   * Pick which subquadrants to use, using the ox-plowing technique from
+   * Christensen et al.
+   */
+  std::vector<std::pair<int, int>> GetSubQuadrantsOxPlowing(
       const Point samples[],
       const int dim);
 }  // namespace pmj

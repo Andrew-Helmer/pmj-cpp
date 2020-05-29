@@ -62,7 +62,7 @@ typedef double (*dist_fn)(const pmj::Point& point);
 }
 
 std::vector<double> GetErrors(const dist_fn dist_func,
-                              const pmj::sample_f sample_func,
+                              const pmj::sample_fn sample_func,
                               const int num_samples,
                               const int num_runs,
                               const double ground_truth) {

@@ -14,9 +14,7 @@
 #include "absl/strings/str_split.h"
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
-#include "sample_generation/pj.h"
-#include "sample_generation/pmj.h"
-#include "sample_generation/pmj02.h"
+#include "sample_generation/util.h"
 
 ABSL_FLAG(int, n, 65536,
     "The number of samples to generate in each run.");
@@ -32,16 +30,6 @@ using std::vector;
 
 typedef std::unique_ptr<pmj::Point[]> (*sample_f)(int);
 
-sample_f GetSamplingFunction(const string& algorithm) {
-  return algorithm == "pj" ? &pmj::GetProgJitteredSamples :
-      algorithm == "pmj" ? &pmj::GetProgMultiJitteredSamples :
-      algorithm == "pmjbn" ?
-          &pmj::GetProgMultiJitteredSamplesWithBlueNoise :
-      algorithm == "pmj02" ? &pmj::GetPMJ02Samples :
-      algorithm == "pmj02bn" ? &pmj::GetPMJ02SamplesWithBlueNoise :
-      throw std::invalid_argument(algorithm + " is not a valid algorithm.");
-}
-
 int main(int argc, char *argv[]) {
   absl::ParseCommandLine(argc, argv);
 
@@ -53,7 +41,7 @@ int main(int argc, char *argv[]) {
   }
 
   for (const string& algorithm : algorithms_list) {
-    sample_f sample_func = GetSamplingFunction(algorithm);
+    sample_f sample_func = pmj::GetSamplingFunction(algorithm);
     chrono::duration<double> total_time(0);
     for (int i = 0; i < absl::GetFlag(FLAGS_runs); i++) {
       auto start = chrono::high_resolution_clock::now();

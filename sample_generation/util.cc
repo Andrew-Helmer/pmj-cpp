@@ -6,6 +6,10 @@
 #include <utility>
 #include <vector>
 
+#include "sample_generation/pj.h"
+#include "sample_generation/pmj.h"
+#include "sample_generation/pmj02.h"
+
 namespace pmj {
 
 thread_local static std::random_device r;
@@ -93,6 +97,16 @@ double GetNearestNeighborDistSq(const Point& sample,
   }
 
   return min_dist_sq;
+}
+
+sample_f GetSamplingFunction(const std::string& algorithm) {
+  return algorithm == "pj" ? &pmj::GetProgJitteredSamples :
+      algorithm == "pmj" ? &pmj::GetProgMultiJitteredSamples :
+      algorithm == "pmjbn" ?
+          &pmj::GetProgMultiJitteredSamplesWithBlueNoise :
+      algorithm == "pmj02" ? &pmj::GetPMJ02Samples :
+      algorithm == "pmj02bn" ? &pmj::GetPMJ02SamplesWithBlueNoise :
+      throw std::invalid_argument(algorithm + " is not a valid algorithm.");
 }
 
 }  // namespace pmj

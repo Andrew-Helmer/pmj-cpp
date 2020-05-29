@@ -53,15 +53,15 @@ double gaussian_distr(const pmj::Point& point) {
   return (1.0/sqrt(2.0 * M_PI)) * exp(-0.5 * x_sq);
 }
 
-typedef double (*dist_f)(const pmj::Point& point);
-  dist_f GetDistribution(const string& distribution) {
+typedef double (*dist_fn)(const pmj::Point& point);
+  dist_fn GetDistribution(const string& distribution) {
   return distribution == "disc" ? &disc_distr :
       distribution == "gaussian" ? &gaussian_distr :
       throw std::invalid_argument(distribution
                                   + " is not a valid distribution.");
 }
 
-std::vector<double> GetErrors(const dist_f dist_func,
+std::vector<double> GetErrors(const dist_fn dist_func,
                               const pmj::sample_f sample_func,
                               const int num_samples,
                               const int num_runs,
@@ -179,7 +179,7 @@ int main(int argc, char *argv[]) {
     output.SetDistribution(distribution, avg);
 
     for (const std::string& algorithm : algorithms) {
-      pmj::sample_f sample_func = pmj::GetSamplingFunction(algorithm);
+      pmj::sample_fn sample_func = pmj::GetSamplingFunction(algorithm);
       std::vector<double> error_per_sample =
           GetErrors(dist_func, sample_func, num_samples, runs, avg);
 

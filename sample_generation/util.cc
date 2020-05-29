@@ -121,7 +121,7 @@ Point GetBestCandidateOfSamples(const std::vector<Point>& candidates,
   return best_candidate;
 }
 
-sample_f GetSamplingFunction(const std::string& algorithm) {
+sample_fn GetSamplingFunction(const std::string& algorithm) {
   return algorithm == "pj" ? &pmj::GetProgJitteredSamples :
       algorithm == "pmj" ? &pmj::GetProgMultiJitteredSamples :
             algorithm == "pmjbn" ?

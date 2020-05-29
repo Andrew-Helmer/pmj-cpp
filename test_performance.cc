@@ -28,8 +28,6 @@ namespace chrono = std::chrono;
 using std::string;
 using std::vector;
 
-typedef std::unique_ptr<pmj::Point[]> (*sample_f)(int);
-
 int main(int argc, char *argv[]) {
   absl::ParseCommandLine(argc, argv);
 
@@ -41,7 +39,7 @@ int main(int argc, char *argv[]) {
   }
 
   for (const string& algorithm : algorithms_list) {
-    sample_f sample_func = pmj::GetSamplingFunction(algorithm);
+    pmj::sample_fn sample_func = pmj::GetSamplingFunction(algorithm);
     chrono::duration<double> total_time(0);
     for (int i = 0; i < absl::GetFlag(FLAGS_runs); i++) {
       auto start = chrono::high_resolution_clock::now();

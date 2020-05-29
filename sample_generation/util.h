@@ -24,9 +24,9 @@ Point GetBestCandidateOfSamples(const std::vector<Point>& candidates,
                                 const Point* sample_grid[],
                                 const int dim);
 
-typedef std::unique_ptr<pmj::Point[]> (*sample_f)(int);
+typedef std::unique_ptr<pmj::Point[]> (*sample_fn)(int);
 
-sample_f GetSamplingFunction(const std::string& algorithm);
+sample_fn GetSamplingFunction(const std::string& algorithm);
 
 }  // namespace pmj
 

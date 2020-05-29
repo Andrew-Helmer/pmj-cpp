@@ -369,14 +369,14 @@ std::unique_ptr<Point[]> GetPMJ02SamplesWithBlueNoise(
 std::unique_ptr<Point[]> GetPMJ02SamplesNoBalance(
     const int num_samples) {
   return GenerateSamples(num_samples,
-                         /*num_candidates=*/20,
+                         /*num_candidates=*/10,
                          /*subsequence_stratification=*/false,
                          /*subquad_func=*/&GetSubQuadrantsRandomly);
 }
 std::unique_ptr<Point[]> GetPMJ02SamplesOxPlowing(
     const int num_samples) {
   return GenerateSamples(num_samples,
-                         /*num_candidates=*/20,
+                         /*num_candidates=*/10,
                          /*subsequence_stratification=*/false,
                          /*subquad_func=*/&GetSubQuadrantsOxPlowing);
 }

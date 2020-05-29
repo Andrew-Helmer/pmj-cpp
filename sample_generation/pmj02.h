@@ -11,13 +11,29 @@
 
 namespace pmj {
 
-// Generates progressive multi-jittered samples WITHOUT blue noise properties.
-// Takes in a number of samples.
+// Generates progressive multi-jittered (0,2) samples WITHOUT blue noise
+// properties. Takes in a number of samples.
 std::unique_ptr<Point[]> GetPMJ02Samples(const int num_samples);
 
-// Generates progressive multi-jittered samples with blue noise properties.
+// Generates progressive multi-jittered (0,2) samples with blue noise
+// properties.
 std::unique_ptr<Point[]> GetPMJ02SamplesWithBlueNoise(
     const int num_samples);
+
+/*
+ * These functions are just for experimentation, but likely not useful for
+ * real purposes, since they perform worse than the ones above.
+ */
+
+// Generates progressive multi-jittered (0,2) samples, but instead of
+// ensuring (0,2) subsequences, it chooses subquadrants randomly between
+// even and odd powers of two.
+std::unique_ptr<Point[]> GetPMJ02SamplesNoBalance(const int num_samples);
+
+// Generates progressive multi-jittered (0,2) samples, but instead of
+// ensuring (0,2) subsequences, it chooses subquadrants using the ox-plowing
+// technique in Christensen et al.
+std::unique_ptr<Point[]> GetPMJ02SamplesOxPlowing(const int num_samples);
 
 }  // namespace pmj
 

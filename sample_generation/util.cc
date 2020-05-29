@@ -102,10 +102,20 @@ double GetNearestNeighborDistSq(const Point& sample,
 sample_f GetSamplingFunction(const std::string& algorithm) {
   return algorithm == "pj" ? &pmj::GetProgJitteredSamples :
       algorithm == "pmj" ? &pmj::GetProgMultiJitteredSamples :
-      algorithm == "pmjbn" ?
+            algorithm == "pmjbn" ?
           &pmj::GetProgMultiJitteredSamplesWithBlueNoise :
       algorithm == "pmj02" ? &pmj::GetPMJ02Samples :
       algorithm == "pmj02bn" ? &pmj::GetPMJ02SamplesWithBlueNoise :
+      /* Experimental/Explicit Algorithms */
+      algorithm == "pmj-oxplowing" ?
+          &pmj::GetProgMultiJitteredSamplesOxPlowing :
+      algorithm == "pmj-random" ? &pmj::GetProgMultiJitteredSamplesRandom :
+      algorithm == "pmjbn-oxplowing" ?
+          &pmj::GetProgMultiJitteredSamplesWithBlueNoiseOxPlowing :
+      algorithm == "pmjbn-random" ?
+          &pmj::GetProgMultiJitteredSamplesWithBlueNoiseRandom :
+      algorithm == "pmj02-oxplowing" ? &pmj::GetPMJ02SamplesOxPlowing :
+      algorithm == "pmj02-no-balance" ? &pmj::GetPMJ02SamplesNoBalance :
       throw std::invalid_argument(algorithm + " is not a valid algorithm.");
 }
 

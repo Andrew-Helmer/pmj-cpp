@@ -64,10 +64,8 @@ int main(int argc, char* argv[]) {
       algorithm == "pmj02bn" ? pmj::GetPMJ02SamplesWithBlueNoise(n_samples)
       : throw std::invalid_argument(algorithm + " is not a valid algorithm.");
 
-  std::cout << "[";
   for (int i = 0; i < n_samples; i++) {
     const auto& sample = samples[i];
     std::cout << "(" << sample.x << ", " << sample.y << "),\n";
   }
-  std::cout << "]";
 }

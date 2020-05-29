@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "sample_generation/pmj_util.h"
 #include "sample_generation/util.h"
 
 namespace pmj {
@@ -31,10 +32,8 @@ class SampleSet {
     sample_grid_ = std::make_unique<const Point*[]>(grid_memory_size);
   }
 
-  void PickSubquadrantWithBalance(const int sample_index,
-                                     int* x_pos,
-                                     int* y_pos);
   void GenerateFirstSample();
+
   // This generates a new sample at the current index, given the X position
   // and Y position of the subquadrant. It won't generate a new sample in an
   // existing strata.
@@ -53,6 +52,9 @@ class SampleSet {
   const Point& sample(const int sample_index) const {
     return samples_[sample_index];
   }
+  const Point* samples() const {
+    return samples_.get();
+  }
   const int dim() const { return dim_; }
 
   const int num_samples;
@@ -62,25 +64,18 @@ class SampleSet {
   void AddSample(const int i, const Point& sample);
 
   // Given a sample, sets all the correct strata to true.
-  void UpdateStrata(const Point& sample, const int partial_strata_index = -1);
+  void UpdateStrata(const Point& sample);
 
   Point GetCandidateSample(const int x_pos,
                            const int y_pos,
                            const vector<int>& valid_x_strata,
                            const vector<int>& valid_y_strata) const;
 
-  bool IsStrataOccupied(const Point& sample,
-                          const int partial_strata_index = -1) const;
-
-  int GetPartialStrataIndex(const int sample_index) const;
-
   std::unique_ptr<Point[]> samples_;
 
   // Contains all strata of elementary (0,2) intervals. Each value is true/false
   // for if a sample resides there.
   vector<vector<bool>> strata_ {{false}};
-  // This is the same as above, but it's only used for odd powers of two.
-  vector<vector<bool>> partial_strata_[2] {};
 
   // The sample grid is used for nearest neighbor lookups.
   std::unique_ptr<const Point*[]> sample_grid_;
@@ -107,18 +102,6 @@ void SampleSet::SubdivideStrata() {
   strata_.resize(strata_.size()+1);
 
   std::fill(strata_.begin(), strata_.end(), vector<bool>(n_, false));
-
-  // For 3-4 samples, the partial strata are both 1x1. For samples 9-12 and
-  // 13-16, the partial strata are 4x1, 1x4. For samples 33-48 and 49-64, we
-  // have 16x1, 8x2, 2x8, 1x16.
-  if (is_power_of_4_ && n_ >= 16) {
-    for (int i = 0; i < 2; i++) {
-      partial_strata_[i].resize(partial_strata_[i].size()+2);
-      std::fill(partial_strata_[i].begin(),
-                partial_strata_[i].end(),
-                vector<bool>(n_/4, false));
-    }
-  }
 
   std::fill_n(sample_grid_.get(), old_n, nullptr);
   for (int i = 0; i < old_n; i++) {
@@ -153,33 +136,16 @@ Point SampleSet::GetCandidateSample(const int x_pos,
   return sample;
 }
 
-int SampleSet::GetPartialStrataIndex(const int sample_index) const {
-  return -1;
-
-  if (n_ <= 8) {
-    // No partial strata yet.
-    return -1;
-  }
-  // We use this to determine whether we're in an even or odd power of 2. Of
-  // course there are other ways to do this.
-  const int n_total = dim_*dim_;
-  return sample_index < (n_total/2)
-      ? -1
-      : ((sample_index - n_total/2) < (n_total/4)
-          ? 0
-          : 1);
-}
-
 void SampleSet::GenerateFirstSample() {
   Point sample = {UniformRand(), UniformRand()};
   AddSample(0, sample);
 }
 
-void GetXStrata(const int x_pos,
-                const int y_pos,
-                const int strata_index,
-                const vector<vector<bool>>& strata,
-                vector<int>* x_strata) {
+inline void GetXStrata(const int x_pos,
+                       const int y_pos,
+                       const int strata_index,
+                       const vector<vector<bool>>& strata,
+                       vector<int>* x_strata) {
   const int strata_x_dim = 1 << (strata.size() - strata_index - 1);
   const bool is_occupied =
       strata[strata_index][y_pos*strata_x_dim + x_pos];
@@ -194,11 +160,11 @@ void GetXStrata(const int x_pos,
     }
   }
 }
-void GetYStrata(const int x_pos,
-                const int y_pos,
-                const int strata_index,
-                const vector<vector<bool>>& strata,
-                vector<int>* y_strata) {
+inline void GetYStrata(const int x_pos,
+                       const int y_pos,
+                       const int strata_index,
+                       const vector<vector<bool>>& strata,
+                       vector<int>* y_strata) {
   const int strata_x_dim = 1 << (strata.size() - strata_index - 1);
   const bool is_occupied =
       strata[strata_index][y_pos*strata_x_dim + x_pos];
@@ -214,7 +180,7 @@ void GetYStrata(const int x_pos,
   }
 }
 
-std::pair<vector<int>, vector<int>> GetValidStrata(
+inline std::pair<vector<int>, vector<int>> GetValidStrata(
     const int x_pos, const int y_pos, const vector<vector<bool>>& strata) {
   std::pair<vector<int>, vector<int>> valid_strata = {{}, {}};
 
@@ -235,9 +201,7 @@ void SampleSet::GenerateNewSample(const int sample_index,
   Point best_candidate;
   double max_dist_sq = 0.0;
 
-  int partial_strata_index = GetPartialStrataIndex(sample_index);
-
-  const std::pair<vector<int>, vector<int>> valid_strata =
+  const std::pair<vector<int>, vector<int>>& valid_strata =
       GetValidStrata(x_pos, y_pos, strata_);
 
   for (int i = 0; i < num_candidates_; i++) {
@@ -257,8 +221,7 @@ void SampleSet::GenerateNewSample(const int sample_index,
   AddSample(sample_index, best_candidate);
 }
 
-void SampleSet::UpdateStrata(const Point& sample,
-                             const int partial_strata_index) {
+void SampleSet::UpdateStrata(const Point& sample) {
   for (int i = 0, x_width = n_, y_width = 1;
        x_width >= 1;
        x_width /= 2, y_width *= 2, i++) {
@@ -266,105 +229,16 @@ void SampleSet::UpdateStrata(const Point& sample,
     int y_pos = sample.y * y_width;
     strata_[i][y_pos*x_width + x_pos] = true;
   }
-
-  // Only difference from above is n/4, and partial_strata_.
-  if (partial_strata_index >= 0) {
-    for (int i = 0, x_width = n_ / 4, y_width = 1;
-         x_width >= 1;
-         x_width /= 2, y_width *= 2, i++) {
-      int x_pos = sample.x * x_width;
-      int y_pos = sample.y * y_width;
-
-      partial_strata_[partial_strata_index][i][y_pos*x_width + x_pos] = true;
-    }
-  }
-}
-
-bool SampleSet::IsStrataOccupied(const Point& sample,
-                                 const int partial_strata_index) const {
-  for (int i = 0, x_width = n_, y_width = 1;
-       x_width >= 1;
-       x_width /= 2, y_width *= 2, i++) {
-    int x_pos = sample.x * x_width;
-    int y_pos = sample.y * y_width;
-
-    if (strata_[i][y_pos*x_width + x_pos]) return true;
-  }
-
-  // Only difference from above is n/4, and partial_strata_.
-  if (partial_strata_index >= 0) {
-      for (int i = 0, x_width = n_ / 4, y_width = 1;
-           x_width >= 1;
-           x_width /= 2, y_width *= 2, i++) {
-        if (x_width == y_width) {
-          i--;
-          continue;
-        }
-        int x_pos = sample.x * x_width;
-        int y_pos = sample.y * y_width;
-
-        if (partial_strata_[partial_strata_index][i][y_pos*x_width + x_pos])
-          return true;
-      }
-  }
-  return false;
 }
 
 void SampleSet::AddSample(const int i,
                           const Point& sample) {
   samples_[i] = sample;
 
-  UpdateStrata(sample, GetPartialStrataIndex(i));
+  UpdateStrata(sample);
 
   const int x_pos = sample.x * dim_, y_pos = sample.y * dim_;
   sample_grid_[y_pos*dim_ + x_pos] = &(samples_[i]);
-}
-
-// Modifies x_pos and y_pos to point to a new non-diagonal (adjacent)
-// subquadrant, taking into account current balance.
-void SampleSet::PickSubquadrantWithBalance(const int sample_index,
-                                           int* x_pos,
-                                           int* y_pos) {
-  // No balance for now...
-  bool use_subquad_1 = UniformRand() < 0.5;
-  if (use_subquad_1) {
-    *x_pos = *x_pos ^ 1;
-    *y_pos = *y_pos;
-  } else {
-    *x_pos = *x_pos;
-    *y_pos = *y_pos ^ 1;
-  }
-  return;
-
-  // const int partial_strata_index = GetPartialStrataIndex(sample_index);
-  // int x_pos1 = *x_pos ^ 1, y_pos1 = *y_pos;
-  // int x_pos2 = *x_pos , y_pos2 = *y_pos ^ 1;
-  // while (true) {
-  //   Point sample1 = {UniformRand(x_pos1*grid_size_, (x_pos1+1)*grid_size_),
-  //                    UniformRand(y_pos1*grid_size_, (y_pos1+1)*grid_size_)};
-  //   Point sample2 = {UniformRand(x_pos2*grid_size_, (x_pos2+1)*grid_size_),
-  //                    UniformRand(y_pos2*grid_size_, (y_pos2+1)*grid_size_)};
-  //   if (!IsStrataOccupied(sample1, partial_strata_index)) {
-  //     if (!IsStrataOccupied(sample2, partial_strata_index)) {
-  //       bool use_subquad_1 = UniformRand() < 0.5;
-  //       if (use_subquad_1) {
-  //         *x_pos = x_pos1;
-  //         *y_pos = y_pos1;
-  //       } else {
-  //         *x_pos = x_pos2;
-  //         *y_pos = y_pos2;
-  //       }
-  //       return;
-  //     }
-  //     *x_pos = x_pos1;
-  //     *y_pos = y_pos1;
-  //     return;
-  //   } else if (!IsStrataOccupied(sample2, partial_strata_index)) {
-  //     *x_pos = x_pos2;
-  //     *y_pos = y_pos2;
-  //     return;
-  //   }
-  // }
 }
 
 std::unique_ptr<Point[]> GenerateSamples(
@@ -396,25 +270,18 @@ std::unique_ptr<Point[]> GenerateSamples(
     sample_set.SubdivideStrata();
 
     // This represents the x_pos and y_pos of the subquadrants that we choose.
-    int chosen_cells[n][2];
+    auto sub_quad_choices =
+        GetBalancedChoicesHilbert(sample_set.samples(), sample_set.dim());
     for (int i = 0; i < n && 2*n+i < num_samples; i++) {
-      const auto& sample = sample_set.sample(i);
-
-      int x_pos = sample.x * sample_set.dim();
-      int y_pos = sample.y * sample_set.dim();
-
-      sample_set.PickSubquadrantWithBalance(2*n+i, &x_pos, &y_pos);
-
-      sample_set.GenerateNewSample(2*n+i, x_pos, y_pos);
-
-      chosen_cells[i][0] = x_pos;
-      chosen_cells[i][1] = y_pos;
+      sample_set.GenerateNewSample(2*n+i,
+                                   sub_quad_choices[i].first,
+                                   sub_quad_choices[i].second);
     }
 
     for (int i = 0; i < n && 3*n+i < num_samples; i++) {
       // Get the one diagonally opposite to the one we just got.
       sample_set.GenerateNewSample(
-          3*n+i, chosen_cells[i][0] ^ 1, chosen_cells[i][1] ^ 1);
+          3*n+i, sub_quad_choices[i].first ^ 1, sub_quad_choices[i].second ^ 1);
     }
 
     n *= 4;

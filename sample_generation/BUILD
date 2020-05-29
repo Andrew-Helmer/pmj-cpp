@@ -44,11 +44,19 @@ cc_library(
     name = "pmj02",
     srcs = ["pmj02.cc"],
     hdrs = ["pmj02.h"],
-    deps = [":util"]
+    deps = [
+        ":pmj_util",
+        ":util",
+    ]
 )
 
 cc_library(
     name = "util",
     srcs = ["util.cc"],
     hdrs = ["util.h"],
+    deps = [
+        "pj",
+        "pmj",
+        "pmj02",
+    ]
 )

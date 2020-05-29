@@ -37,6 +37,30 @@ void HilbertIndexToPos(int n, int d, int *x, int *y) {
 }
 }  // namespace
 
+std::vector<std::pair<int, int>> GetBalancedChoicesRandom(
+    const Point samples[],
+    const int dim) {
+  const int quad_dim = dim / 2;
+  const int n = quad_dim*quad_dim;
+
+  // We'll return out choices at the end.
+  std::vector<std::pair<int, int>> choices(n);
+
+  for (int i = 0; i < n; i++) {
+    const auto& sample = samples[i];
+    int x_pos = sample.x * dim;
+    int y_pos = sample.y * dim;
+
+    if (UniformRand() < 0.5) {
+      choices[i] = {x_pos ^ 1, y_pos};
+    } else {
+      choices[i] = {x_pos, y_pos ^ 1};
+    }
+  }
+
+  return choices;
+}
+
 /*
  * This function chooses the subquads to use in between even and odd powers
  * of two. In Christensen et al., they use ox-plowing, but only balance in the
@@ -135,6 +159,7 @@ std::vector<std::pair<int, int>> GetBalancedChoicesHilbert(
     for (int i = 0; i < quad_dim; i++) {
       if (choice_balance_x[i] != 0 || choice_balance_y[i] != 0) {
         attempt_successful = false;
+        break;
       }
     }
     if (n == 1 || attempt_successful) {

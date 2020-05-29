@@ -8,6 +8,10 @@
 #include "sample_generation/util.h"
 
 namespace pmj {
+  std::vector<std::pair<int, int>> GetBalancedChoicesRandom(
+      const Point samples[],
+      const int dim);
+
   std::vector<std::pair<int, int>> GetBalancedChoicesOxPlowing(
       const Point samples[],
       const int dim);

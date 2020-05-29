@@ -40,7 +40,7 @@ void GenPJSamplesForQuadrant(
   // Pick one of the two adjacent cells to generate new sample. This will go
   // much later in the sequence, so we might not do this if it's more samples
   // than requested.
-  if (2*n+i > num_samples) {
+  if (2*n+i >= num_samples) {
     return;
   }
 
@@ -55,7 +55,7 @@ void GenPJSamplesForQuadrant(
   samples[2*n+i] = GetSample(new_x_pos, new_y_pos, grid_size);
 
   // Do the diagonal of the previous sample.
-  if (3*n+i > num_samples) {
+  if (3*n+i >= num_samples) {
     return;
   }
 

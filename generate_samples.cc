@@ -57,6 +57,9 @@ int main(int argc, char* argv[]) {
   auto* sample_func = pmj::GetSamplingFunction(algorithm);
   std::unique_ptr<pmj::Point[]> samples = (*sample_func)(n_samples);
 
+  // Full double precision.
+  std::cout.precision(17);
+
   for (int i = 0; i < n_samples; i++) {
     const auto& sample = samples[i];
     std::cout << "(" << sample.x << ", " << sample.y << "),\n";

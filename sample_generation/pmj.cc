@@ -66,6 +66,10 @@ class SampleSet {
   std::unique_ptr<Point[]> samples_;
 
   // Vector bool is usually implemented as a bitset!
+  // This could be significantly optimized, especially for best-candidate
+  // sampling, by actually storing these as a binary tree, rather than a linear
+  // array, where each node represents whether there are any unoccupied strata
+  // in a range. This would be similar to Matt Pharr's optimization for PMJ02.
   std::vector<bool> x_strata_ {false};
   std::vector<bool> y_strata_ {false};
 
@@ -156,7 +160,8 @@ void SampleSet::AddSample(const int i,
 
 std::unique_ptr<Point[]> GenerateSamples(
     const int num_samples,
-    const int num_candidates) {
+    const int num_candidates,
+    const subquad_fn subquad_func = &GetSubQuadrantsOxPlowing) {
   SampleSet sample_set(num_samples, num_candidates);
 
   // Generate first sample.
@@ -188,7 +193,7 @@ std::unique_ptr<Point[]> GenerateSamples(
     // We want to make balanced choices here regarding which subquadrants to
     // use, so we precompute them in a special way (see above).
     auto sub_quad_choices =
-        GetBalancedChoicesHilbert(sample_set.samples(), sample_set.dim());
+        (*subquad_func)(sample_set.samples(), sample_set.dim());
     for (int i = 0;
          i < quadrants && 2*quadrants+i < num_samples;
          i++) {
@@ -215,12 +220,31 @@ std::unique_ptr<Point[]> GenerateSamples(
 
 std::unique_ptr<Point[]> GetProgMultiJitteredSamples(
     const int num_samples) {
-  return GenerateSamples(num_samples, 1);
+  return GetProgMultiJitteredSamplesOxPlowing(num_samples);
 }
-
 std::unique_ptr<Point[]> GetProgMultiJitteredSamplesWithBlueNoise(
     const int num_samples) {
-  return GenerateSamples(num_samples, 10);
+  return GetProgMultiJitteredSamplesWithBlueNoiseOxPlowing(num_samples);
+}
+
+/*
+ * Explicit functions, make experimentation a bit easier.
+ */
+std::unique_ptr<Point[]> GetProgMultiJitteredSamplesRandom(
+    const int num_samples) {
+  return GenerateSamples(num_samples, 1, &GetSubQuadrantsRandomly);
+}
+std::unique_ptr<Point[]> GetProgMultiJitteredSamplesOxPlowing(
+    const int num_samples) {
+  return GenerateSamples(num_samples, 1, &GetSubQuadrantsOxPlowing);
+}
+std::unique_ptr<Point[]> GetProgMultiJitteredSamplesWithBlueNoiseRandom(
+    const int num_samples) {
+  return GenerateSamples(num_samples, 10, &GetSubQuadrantsRandomly);
+}
+std::unique_ptr<Point[]> GetProgMultiJitteredSamplesWithBlueNoiseOxPlowing(
+    const int num_samples) {
+  return GenerateSamples(num_samples, 10, &GetSubQuadrantsOxPlowing);
 }
 
 }  // namespace pmj

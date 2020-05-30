@@ -255,7 +255,7 @@ std::unique_ptr<Point[]> GetProgMultiJitteredSamplesWithBlueNoise(
 }
 
 /*
- * Explicit functions, make experimentation a bit easier.
+ * Explicit functions, to make experimentation a bit easier.
  */
 std::unique_ptr<Point[]> GetProgMultiJitteredSamplesRandom(
     const int num_samples) {
@@ -267,18 +267,6 @@ std::unique_ptr<Point[]> GetProgMultiJitteredSamplesOxPlowing(
     const int num_samples) {
   return GenerateSamples(num_samples,
                          /*num_candidates=*/1,
-                         /*subquad_fn=*/&GetSubQuadrantsOxPlowing);
-}
-std::unique_ptr<Point[]> GetProgMultiJitteredSamplesWithBlueNoiseRandom(
-    const int num_samples) {
-  return GenerateSamples(num_samples,
-                         kBestCandidateSamples,
-                         /*subquad_fn=*/&GetSubQuadrantsRandomly);
-}
-std::unique_ptr<Point[]> GetProgMultiJitteredSamplesWithBlueNoiseOxPlowing(
-    const int num_samples) {
-  return GenerateSamples(num_samples,
-                         kBestCandidateSamples,
                          /*subquad_fn=*/&GetSubQuadrantsOxPlowing);
 }
 

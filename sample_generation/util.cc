@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <random>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -166,23 +167,24 @@ Point GetBestCandidateOfSamples(const std::vector<Point>& candidates,
 }
 
 sample_fn GetSamplingFunction(const std::string& algorithm) {
-  return algorithm == "pj" ? &pmj::GetProgJitteredSamples :
-      algorithm == "pmj" ? &pmj::GetProgMultiJitteredSamples :
-            algorithm == "pmjbn" ?
-          &pmj::GetProgMultiJitteredSamplesWithBlueNoise :
-      algorithm == "pmj02" ? &pmj::GetPMJ02Samples :
-      algorithm == "pmj02bn" ? &pmj::GetPMJ02SamplesWithBlueNoise :
-      /* Experimental/Explicit Algorithms */
-      algorithm == "pmj-oxplowing" ?
-          &pmj::GetProgMultiJitteredSamplesOxPlowing :
-      algorithm == "pmj-random" ? &pmj::GetProgMultiJitteredSamplesRandom :
-      algorithm == "pmjbn-oxplowing" ?
-          &pmj::GetProgMultiJitteredSamplesWithBlueNoiseOxPlowing :
-      algorithm == "pmjbn-random" ?
-          &pmj::GetProgMultiJitteredSamplesWithBlueNoiseRandom :
-      algorithm == "pmj02-oxplowing" ? &pmj::GetPMJ02SamplesOxPlowing :
-      algorithm == "pmj02-no-balance" ? &pmj::GetPMJ02SamplesNoBalance :
-      throw std::invalid_argument(algorithm + " is not a valid algorithm.");
+  static const std::unordered_map<std::string, sample_fn> kAlgorithmMap = {
+    {"pj", &pmj::GetProgJitteredSamples},
+    {"pmj", &pmj::GetProgMultiJitteredSamples},
+    {"pmjbn", &pmj::GetProgMultiJitteredSamplesWithBlueNoise},
+    {"pmj02", &pmj::GetPMJ02Samples},
+    {"pmj02bn", &pmj::GetPMJ02SamplesWithBlueNoise},
+    /* Experimental/Explicit Algorithms */
+    {"pmj-random", &pmj::GetProgMultiJitteredSamplesRandom},
+    {"pmj-oxplowing", &pmj::GetProgMultiJitteredSamplesOxPlowing},
+    {"pmj02-oxplowing", &pmj::GetProgMultiJitteredSamplesOxPlowing},
+    {"pmj02-no-balance", &pmj::GetPMJ02SamplesNoBalance},
+  };
+
+  auto find_iterator = kAlgorithmMap.find(algorithm);
+  if (find_iterator == kAlgorithmMap.end())
+    throw std::invalid_argument(algorithm + " is not a valid algorithm.");
+
+  return find_iterator->second;
 }
 
 /*

@@ -49,10 +49,6 @@ std::unique_ptr<Point[]> GetProgMultiJitteredSamplesRandom(
     const int num_samples);
 std::unique_ptr<Point[]> GetProgMultiJitteredSamplesOxPlowing(
     const int num_samples);
-std::unique_ptr<Point[]> GetProgMultiJitteredSamplesWithBlueNoiseRandom(
-    const int num_samples);
-std::unique_ptr<Point[]> GetProgMultiJitteredSamplesWithBlueNoiseOxPlowing(
-    const int num_samples);
 
 }  // namespace pmj
 

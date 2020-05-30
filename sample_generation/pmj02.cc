@@ -49,11 +49,13 @@ class SampleSet {
                      : num_samples(num_samples),
                        num_candidates_(num_candidates) {
     samples_ = std::make_unique<Point[]>(num_samples);
+    std::fill_n(samples_.get(), num_samples, Point({0.0, 0.0}));
 
     int grid_memory_size = 1;
     while (grid_memory_size < num_samples)
       grid_memory_size <<= 2;
     sample_grid_ = std::make_unique<const Point*[]>(grid_memory_size);
+    std::fill_n(sample_grid_.get(), grid_memory_size, nullptr);
   }
 
   void GenerateFirstSample();
@@ -73,9 +75,6 @@ class SampleSet {
   // This function clears the strata, and goes through the existing points and
   // marks the occupied strata.
   void ResetAndMarkStrata(const int num_existing_samples);
-  // InitSubsequenceStrata should be called between odd and even powers of two.
-  // It is used to ensure that the subsequences are themselves (0,2) sequences.
-  void InitSubsequenceStrata();
 
   // Get all the samples at the end.
   std::unique_ptr<Point[]> ReleaseSamples() {
@@ -110,14 +109,11 @@ class SampleSet {
   // for if a sample resides there.
   vector<vector<bool>> strata_ {{false}};
 
-  vector<vector<bool>> subsequence_strata_ {{false}};
-
   // The sample grid is used for nearest neighbor lookups.
   std::unique_ptr<const Point*[]> sample_grid_;
 
   int n_ = 1;  // Number of samples in the next pass.
   bool is_power_of_4_ = true;
-  bool use_subsequence_strata_ = false;
   int dim_ = 1;  // Number of cells in one dimension in next pass, i.e. sqrt(n).
 
   // Number of candidates to use for best-candidate sampling.
@@ -137,16 +133,10 @@ void SampleSet::SubdivideStrata() {
   // samples 3-4 it's 4x1, 2x2, and 1x4. So every time it goes up by one.
   strata_.resize(strata_.size()+1);
 
-  ResetAndMarkStrata(old_n);
-}
-
-void SampleSet::ResetAndMarkStrata(const int num_existing_samples) {
+  // Clear all the strata and remark the occupied ones.
   std::fill(strata_.begin(), strata_.end(), vector<bool>(n_, false));
   std::fill_n(sample_grid_.get(), n_, nullptr);
-
-  use_subsequence_strata_ = false;
-
-  for (int i = 0; i < num_existing_samples; i++) {
+  for (int i = 0; i < old_n; i++) {
     const auto& sample = samples_[i];
 
     UpdateStrata(sample);
@@ -154,11 +144,6 @@ void SampleSet::ResetAndMarkStrata(const int num_existing_samples) {
     const int x_pos = sample.x * dim_, y_pos = sample.y * dim_;
     sample_grid_[y_pos*dim_ + x_pos] = &sample;
   }
-}
-
-void SampleSet::InitSubsequenceStrata() {
-  use_subsequence_strata_ = true;
-  subsequence_strata_ = strata_;
 }
 
 // This generates a sample within the grid position, verifying that it doesn't
@@ -193,12 +178,8 @@ void SampleSet::GenerateNewSample(const int sample_index,
                                   const int y_pos) {
   Point best_candidate;
 
-  vector<vector<bool>>* strata = &strata_;
-  if (use_subsequence_strata_) {
-    strata = &subsequence_strata_;
-  }
   const std::pair<vector<int>, vector<int>>& valid_strata =
-      GetValidStrata(x_pos, y_pos, *strata);
+      GetValidStrata(x_pos, y_pos, strata_);
 
   if (num_candidates_ <= 1) {
     best_candidate = GetCandidateSample(
@@ -218,9 +199,6 @@ void SampleSet::GenerateNewSample(const int sample_index,
 
 void SampleSet::UpdateStrata(const Point& sample) {
   vector<vector<bool>>* strata = &strata_;
-  if (use_subsequence_strata_) {
-    strata = &subsequence_strata_;
-  }
 
   for (int i = 0, x_width = n_, y_width = 1;
        x_width >= 1;
@@ -228,14 +206,6 @@ void SampleSet::UpdateStrata(const Point& sample) {
     int x_pos = sample.x * x_width;
     int y_pos = sample.y * y_width;
     (*strata)[i][y_pos*x_width + x_pos] = true;
-
-    // Every strata within the subsequence corresponds to a 2x2 rectangle of
-    // strata within the whole sequence, so we mark those as occupied.
-    if (use_subsequence_strata_ && n_ > 4 && x_width >= 2 && y_width >= 2) {
-      (*strata)[i][(y_pos^1)*x_width + x_pos] = true;
-      (*strata)[i][y_pos*x_width + (x_pos^1)] = true;
-      (*strata)[i][(y_pos^1)*x_width + (x_pos^1)] = true;
-    }
   }
 }
 
@@ -255,14 +225,8 @@ void SampleSet::AddSample(const int i,
 std::unique_ptr<Point[]> GenerateSamples(
     const int num_samples,
     const int num_candidates,
-    const bool subsequence_stratification = true,
-    const subquad_fn subquad_func = &GetSubQuadrantsConsistently) {
+    const subquad_fn subquad_func = &GetSubQuadrantsShuffleSwap) {
   SampleSet sample_set(num_samples, num_candidates);
-
-  // A different balance function doesn't work with subsequence stratification,
-  // it gets stuck.
-  assert(subquad_func == (&GetSubQuadrantsConsistently) ||
-         !subsequence_stratification);
 
   sample_set.GenerateFirstSample();
 
@@ -272,12 +236,15 @@ std::unique_ptr<Point[]> GenerateSamples(
     sample_set.SubdivideStrata();
 
     // For every sample, we first generate the diagonally opposite one at the
-    // current grid level.
+    // current grid level. Although we shuffle to visit them in a different
+    // order.
+    std::vector<const Point*> shuffled_pts =
+        PMJ02Shuffle(sample_set.samples(), n);
     for (int i = 0; i < n && n+i < num_samples; i++) {
-      const auto& sample = sample_set.sample(i);
+      const auto* sample = shuffled_pts[i];
 
-      int x_pos = sample.x * sample_set.dim();
-      int y_pos = sample.y * sample_set.dim();
+      int x_pos = sample->x * sample_set.dim();
+      int y_pos = sample->y * sample_set.dim();
 
       sample_set.GenerateNewSample(n+i, x_pos ^ 1, y_pos ^ 1);
       if (n+i >= num_samples) {
@@ -288,26 +255,12 @@ std::unique_ptr<Point[]> GenerateSamples(
     // Subdivide the strata, for instance strata of 4x1, 2x2, 1x4 will become
     // 8x1, 4x2, 2x4, 1x8.
     sample_set.SubdivideStrata();
-    if (subsequence_stratification) {
-      // For best error, we want both all the points and the next n points to
-      // be well stratified. We achieve this with subsequence strata.
-      sample_set.InitSubsequenceStrata();
-    }
 
     auto sub_quad_choices =
         (*subquad_func)(sample_set.samples(), sample_set.dim());
     for (int i = 0; i < n && 2*n+i < num_samples; i++) {
       sample_set.GenerateNewSample(
           2*n+i, sub_quad_choices[i].first, sub_quad_choices[i].second);
-    }
-
-    if (subsequence_stratification) {
-      // We don't want these next n samples to be a (0,2) sequence with the
-      // subsequent n, but we do want them to be part of the (0,2) sequence for
-      // the full 4*n, so we reset the strata and re-initialize the subsequence
-      // strata.
-      sample_set.ResetAndMarkStrata(3*n);
-      sample_set.InitSubsequenceStrata();
     }
 
     for (int i = 0; i < n && 3*n+i < num_samples; i++) {
@@ -339,14 +292,12 @@ std::unique_ptr<Point[]> GetPMJ02SamplesNoBalance(
     const int num_samples) {
   return GenerateSamples(num_samples,
                          kBestCandidateSamples,
-                         /*subsequence_stratification=*/false,
                          /*subquad_func=*/&GetSubQuadrantsRandomly);
 }
 std::unique_ptr<Point[]> GetPMJ02SamplesOxPlowing(
     const int num_samples) {
   return GenerateSamples(num_samples,
                          kBestCandidateSamples,
-                         /*subsequence_stratification=*/false,
                          /*subquad_func=*/&GetSubQuadrantsOxPlowing);
 }
 }  // namespace pmj

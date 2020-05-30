@@ -29,10 +29,13 @@ namespace pmj {
       const int dim);
 
   /*
-   * This will randomly choose once to swap X or swap Y, but will then make that
-   * same choice for EVERY value.
+   * This will randomly choose once to swap X or swap Y, and will always swap
+   * X or Y for all subquadrants. For PMJ02, this ensures that the next set of
+   * samples are themselves a (0,2) sequence.
+   * Additionally, it also shuffles the order that the cells are visited, but
+   * still maintains itself as a progressive (0,2) sequence.
    */
-  std::vector<std::pair<int, int>> GetSubQuadrantsConsistently(
+  std::vector<std::pair<int, int>> GetSubQuadrantsShuffleSwap(
     const Point samples[],
     const int dim);
 

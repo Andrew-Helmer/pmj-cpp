@@ -15,7 +15,6 @@ std::vector<std::pair<int, int>> GetSubQuadrantsRandomly(
   const int quad_dim = dim / 2;
   const int n = quad_dim*quad_dim;
 
-  // We'll return out choices at the end.
   std::vector<std::pair<int, int>> choices(n);
 
   for (int i = 0; i < n; i++) {
@@ -39,7 +38,6 @@ std::vector<std::pair<int, int>> GetSubQuadrantsConsistently(
   const int quad_dim = dim / 2;
   const int n = quad_dim*quad_dim;
 
-  // We'll return out choices at the end.
   std::vector<std::pair<int, int>> choices(n);
 
   const bool swap_x = (UniformRand() < 0.5);
@@ -65,11 +63,10 @@ std::vector<std::pair<int, int>> GetSubQuadrantsOxPlowing(
   const int quad_dim = dim / 2;
   const int n = quad_dim*quad_dim;
 
-  // We'll return out choices at the end.
   std::vector<std::pair<int, int>> choices(n);
 
   // First we want to get the subquadrant positions, and also the sampling order
-  // from
+  // from the original samples.
   std::vector<int> first_cells(n*2);
   std::vector<int> quadrant_order(n);
   for (int i = 0; i < n; i++) {

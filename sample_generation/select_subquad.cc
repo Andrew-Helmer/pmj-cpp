@@ -47,7 +47,8 @@ std::vector<std::pair<int, int>> GetSubQuadrantsShuffleSwap(
 
   std::vector<std::pair<int, int>> choices(n);
 
-  const std::vector<const Point*> shuffled_points = PMJ02Shuffle(samples, 2*n);
+  const std::vector<const Point*> shuffled_points =
+      ShufflePMJ02Sequence(samples, 2*n);
   for (int i = 0; i < n; i++) {
     const Point* sample = shuffled_points[i];
     int x_pos = sample->x * dim;

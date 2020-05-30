@@ -21,12 +21,6 @@
 namespace pmj {
   typedef std::vector<std::pair<int, int>> (*subquad_fn)(
       const Point samples[], const int dim);
-  /*
-   * Pick which subquadrants to use randomly.
-   */
-  std::vector<std::pair<int, int>> GetSubQuadrantsRandomly(
-      const Point samples[],
-      const int dim);
 
   /*
    * This will randomly choose once to swap X or swap Y, and will always swap
@@ -44,6 +38,14 @@ namespace pmj {
    * Christensen et al.
    */
   std::vector<std::pair<int, int>> GetSubQuadrantsOxPlowing(
+      const Point samples[],
+      const int dim);
+
+  /*
+   * Pick which subquadrants to use randomly. No reason to actually use this:
+   * OxPlowing is better for pmj and ShuffleSwap is better for pmj(0,2).
+   */
+  std::vector<std::pair<int, int>> GetSubQuadrantsRandomly(
       const Point samples[],
       const int dim);
 }  // namespace pmj

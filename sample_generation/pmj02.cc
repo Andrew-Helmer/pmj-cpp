@@ -68,15 +68,10 @@ class SampleSet {
                          const int y_pos);
 
   // This function should be called after every power of 2 samples. It divides
-  // the strata up into the next elementary (0,2) intervals, and remarks the
-  // occupied strata (using ResetAndMarkStrata).
+  // the strata up into the next elementary (0,2) intervals, and marks the
+  // occupied strata..
   void SubdivideStrata();
 
-  // This function clears the strata, and goes through the existing points and
-  // marks the occupied strata.
-  void ResetAndMarkStrata(const int num_existing_samples);
-
-  // Get all the samples at the end.
   std::unique_ptr<Point[]> ReleaseSamples() {
     return std::move(samples_);
   }
@@ -133,7 +128,7 @@ void SampleSet::SubdivideStrata() {
   // samples 3-4 it's 4x1, 2x2, and 1x4. So every time it goes up by one.
   strata_.resize(strata_.size()+1);
 
-  // Clear all the strata and remark the occupied ones.
+  // Clear all the strata and mark the occupied ones again.
   std::fill(strata_.begin(), strata_.end(), vector<bool>(n_, false));
   std::fill_n(sample_grid_.get(), n_, nullptr);
   for (int i = 0; i < old_n; i++) {
@@ -239,7 +234,7 @@ std::unique_ptr<Point[]> GenerateSamples(
     // current grid level. Although we shuffle to visit them in a different
     // order.
     std::vector<const Point*> shuffled_pts =
-        PMJ02Shuffle(sample_set.samples(), n);
+        ShufflePMJ02Sequence(sample_set.samples(), n);
     for (int i = 0; i < n && n+i < num_samples; i++) {
       const auto* sample = shuffled_pts[i];
 

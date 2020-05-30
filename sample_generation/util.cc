@@ -193,8 +193,8 @@ sample_fn GetSamplingFunction(const std::string& algorithm) {
  * multiple of a power of two is also a valid PMJ(0,2) sequence, at least if
  * it's constructed using the ShuffleSwap subquadrant selection.
  */
-std::vector<const Point*> PMJ02Shuffle(const pmj::Point points[],
-                                       const int n) {
+std::vector<const Point*> ShufflePMJ02Sequence(const pmj::Point points[],
+                                               const int n) {
   std::vector<const Point*> shuffled_points(n);
   for (int i = 0; i < n; i++) {
     shuffled_points[i] = &points[i];

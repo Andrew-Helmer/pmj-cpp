@@ -1,13 +1,23 @@
-// This simple function takes only two command-line arguments, --algorithm and
-// --n. Algorithm can be one of "pj", "pmj", "pmjbn", "pmj02", or "pmj02bn". By
-// default it is pmj02. n must be an integer greater than zero.
-// Example usage with make:
-// $  make release
-// $  ./generate_samples --algorithm='pmj02bn' --n=4096
-//
-// Example usage with bazel:
-// $  bazel build -c opt :generate_samples
-// $  ./bazel-bin/generate_samples --algorithm=pmj02bn --n=4096
+/*
+ * Copyright (C) Andrew Helmer 2020.
+ *
+ * Licensed under MIT Open-Source License: see LICENSE. If you use this code, or
+ * you generate sample sets that you use, I'd appreciate a credit in the source
+ * code of your software. Just my name and/or a link to the GitHub project.
+ * Thanks!
+ *
+ * This utility takes only two command-line arguments:
+ * --algorithm can be one of "pj", "pmj", "pmjbn", "pmj02", or "pmj02bn". By
+ * default it is pmj02.
+ * --n is the number of samples, and it must be an integer greater than 0.
+ *
+ * Example usage with make:
+ * $  make release
+ * $  ./generate_samples --algorithm=pmj02bn --n=4096
+ *
+ * Example usage with bazel:
+ * $  bazel run -c opt :generate_samples -- --algorithm=pmj02bn --n=4096
+ */
 #include <array>
 #include <iostream>
 #include <memory>

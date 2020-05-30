@@ -1,4 +1,25 @@
-// Copyright 2020 Andrew Helmer
+/*
+ * Copyright (C) Andrew Helmer 2020.
+ *
+ * Licensed under MIT Open-Source License: see LICENSE. If you use this code, or
+ * you generate sample sets that you use, I'd appreciate a credit in the source
+ * code of your software. Just my name and/or a link to the GitHub project.
+ * Thanks!
+ *
+ * These functions generate PMJ(0,2) sequences from
+ * "Progressive Multi-Jittered Sample Sequences", Christensen et al. 2018, using
+ * the algorithm from "Efficient Generation of Points that Satisfy
+ * Two-Dimensional Elementary Intervals", Matt Pharr, 2019.
+ *
+ * Thanks to Matt's paper, the non-best-candidate sampling is quite fast. On my
+ * 2017 Macbook Pro, 65536 samples takes <50ms, i.e. it generates 1.43 million
+ * samples/sec, with -O3 compilation. Best candidate sampling is slower at
+ * ~500,000 samples/sec with 10 candidates. If you want to use the
+ * Best-Candidate samples in a production raytracer, for example, probably
+ * better to precompute a bunch of tables and do lookups into them. Also worth
+ * noting that the pmjbn algorithm (in pmj.cc) has much better blue-noise
+ * characteristics than pmj02bn.
+ */
 #ifndef SAMPLE_GENERATION_PMJ02_H_
 #define SAMPLE_GENERATION_PMJ02_H_
 

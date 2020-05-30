@@ -6,10 +6,7 @@
  * code of your software. Just my name and/or a link to the GitHub project.
  * Thanks!
  *
- * Implementation of PMJ(0,2) sequences from
- * "Progressive Multi-Jittered Sample Sequences", Christensen et al. 2018, using
- * the algorithm from "Efficient Generation of Points that Satisfy
- * Two-Dimensional Elementary Intervals", Matt Pharr, 2019.
+ * Implementation of PMJ(0,2) sequences.
  *
  * This implements Christensen et al.'s balancing characteristic: sub-sequences
  * between odd and even powers of two are themselves (0,2) sequences. This
@@ -18,13 +15,6 @@
  * If you're reading this code for the first time and want to understand the
  * algorithm, start with the function "GenerateSamples".
  *
- * The non-best-candidate sampling is quite fast. On my 2017 Macbook Pro, 65536
- * samples takes <50ms, i.e. it generates 1.43 million samples/sec, with -O3
- * compilation. Best candidate sampling is slower at ~500,000 samples/sec with
- * 10 candidates. If you want to use the Best-Candidate samples in a production
- * raytracer, for example, probably better to precompute a bunch of tables and
- * do lookups into them. Also worth noting that the pmjbn algorithm (in pmj.cc)
- * has much better blue-noise characteristics than pmj02bn.
  */
 #include "sample_generation/pmj02.h"
 
@@ -45,6 +35,8 @@ namespace pmj {
 namespace {
 
 using std::vector;
+
+static constexpr int kBestCandidateSamples = 10;
 
 class SampleSet {
  public:
@@ -324,21 +316,21 @@ std::unique_ptr<Point[]> GetPMJ02Samples(
 
 std::unique_ptr<Point[]> GetPMJ02SamplesWithBlueNoise(
     const int num_samples) {
-  return GenerateSamples(num_samples, /*num_candidates=*/10);
+  return GenerateSamples(num_samples, kBestCandidateSamples);
 }
 
 // These functions are just for experimentation, no reason to actually use them.
 std::unique_ptr<Point[]> GetPMJ02SamplesNoBalance(
     const int num_samples) {
   return GenerateSamples(num_samples,
-                         /*num_candidates=*/10,
+                         kBestCandidateSamples,
                          /*subsequence_stratification=*/false,
                          /*subquad_func=*/&GetSubQuadrantsRandomly);
 }
 std::unique_ptr<Point[]> GetPMJ02SamplesOxPlowing(
     const int num_samples) {
   return GenerateSamples(num_samples,
-                         /*num_candidates=*/10,
+                         kBestCandidateSamples,
                          /*subsequence_stratification=*/false,
                          /*subquad_func=*/&GetSubQuadrantsOxPlowing);
 }

@@ -6,13 +6,10 @@
  * code of your software. Just my name and/or a link to the GitHub project.
  * Thanks!
  *
- * Implementation of PMJ sequences from
- * "Progressive Multi-Jittered Sample Sequences", Christensen et al. 2018. It
- * could be optimized considerably, by changing the strata to be binary trees
- * and improving the best candidate algorithm (which is impemented in util.cc).
- * Still the non-best-candidate sequences run at about 2 million samples/sec on
- * my 2017 Macbook Pro.
-*
+ * Implementation of PMJ sequences from. It could be optimized considerably, by
+ * changing the strata to be binary trees and getting the valid strata for each
+ * sample, then generating the sample within the valid strata.
+ *
  * If you're reading this code for the first time and want to understand the
  * algorithm, start with the function "GenerateSamples".
  *
@@ -32,6 +29,9 @@
 
 namespace pmj {
 namespace {
+
+static constexpr int kBestCandidateSamples = 10;
+
 /*
  * The SampleSet is a class that contains the generated samples, as well as the
  * currently populated strata.
@@ -243,11 +243,11 @@ std::unique_ptr<Point[]> GenerateSamples(
 
 std::unique_ptr<Point[]> GetProgMultiJitteredSamples(
     const int num_samples) {
-  return GetProgMultiJitteredSamplesOxPlowing(num_samples);
+  return GenerateSamples(num_samples, /*num_candidates=*/1);
 }
 std::unique_ptr<Point[]> GetProgMultiJitteredSamplesWithBlueNoise(
     const int num_samples) {
-  return GetProgMultiJitteredSamplesWithBlueNoiseOxPlowing(num_samples);
+  return GenerateSamples(num_samples, kBestCandidateSamples);
 }
 
 /*
@@ -255,19 +255,27 @@ std::unique_ptr<Point[]> GetProgMultiJitteredSamplesWithBlueNoise(
  */
 std::unique_ptr<Point[]> GetProgMultiJitteredSamplesRandom(
     const int num_samples) {
-  return GenerateSamples(num_samples, 1, &GetSubQuadrantsRandomly);
+  return GenerateSamples(num_samples,
+                         /*num_candidates=*/1,
+                         /*subquad_fn=*/&GetSubQuadrantsRandomly);
 }
 std::unique_ptr<Point[]> GetProgMultiJitteredSamplesOxPlowing(
     const int num_samples) {
-  return GenerateSamples(num_samples, 1, &GetSubQuadrantsOxPlowing);
+  return GenerateSamples(num_samples,
+                         /*num_candidates=*/1,
+                         /*subquad_fn=*/&GetSubQuadrantsOxPlowing);
 }
 std::unique_ptr<Point[]> GetProgMultiJitteredSamplesWithBlueNoiseRandom(
     const int num_samples) {
-  return GenerateSamples(num_samples, 10, &GetSubQuadrantsRandomly);
+  return GenerateSamples(num_samples,
+                         kBestCandidateSamples,
+                         /*subquad_fn=*/&GetSubQuadrantsRandomly);
 }
 std::unique_ptr<Point[]> GetProgMultiJitteredSamplesWithBlueNoiseOxPlowing(
     const int num_samples) {
-  return GenerateSamples(num_samples, 10, &GetSubQuadrantsOxPlowing);
+  return GenerateSamples(num_samples,
+                         kBestCandidateSamples,
+                         /*subquad_fn=*/&GetSubQuadrantsOxPlowing);
 }
 
 }  // namespace pmj

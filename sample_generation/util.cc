@@ -1,4 +1,15 @@
-// Copyright 2020 Andrew Helmer
+/*
+ * Copyright (C) Andrew Helmer 2020.
+ *
+ * Licensed under MIT Open-Source License: see LICENSE. If you use this code, or
+ * you generate sample sets that you use, I'd appreciate a credit in the source
+ * code of your software. Just my name and/or a link to the GitHub project.
+ * Thanks!
+ *
+ * This file implements a few functions that are useful for multiple sampling
+ * sequences, especially random number generation and nearest neighbor search
+ * on a grid.
+ */
 #include "sample_generation/util.h"
 
 #include <algorithm>

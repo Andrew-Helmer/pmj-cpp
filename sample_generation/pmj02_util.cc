@@ -7,9 +7,9 @@
  * Thanks!
  *
  * This file implements the optimization from "Efficient Generation of Points
-   that Satisfy Two-Dimensional Elementary Intervals" by Matt Pharr (2019). It
-   has one difference: it doesn't actually build a tree, it just recurses and
-   outputs the strata, which leads to a speedup and cleaner code.
+ * that Satisfy Two-Dimensional Elementary Intervals" by Matt Pharr (2019). It
+ * has one difference: it doesn't actually build a tree, it just recurses and
+ * outputs the strata, which leads to a speedup and cleaner code.
  */
 #include "sample_generation/pmj02_util.h"
 

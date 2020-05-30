@@ -22,7 +22,7 @@
  * samples takes <50ms, i.e. it generates 1.43 million samples/sec, with -O3
  * compilation. Best candidate sampling is slower at ~500,000 samples/sec with
  * 10 candidates. If you want to use the Best-Candidate samples in a production
- * ray-tracer, for example, probably better to precompute a bunch of tables and
+ * raytracer, for example, probably better to precompute a bunch of tables and
  * do lookups into them. Also worth noting that the pmjbn algorithm (in pmj.cc)
  * has much better blue-noise characteristics than pmj02bn.
  */
@@ -37,6 +37,7 @@
 #include <utility>
 #include <vector>
 
+#include "sample_generation/pmj02_util.h"
 #include "sample_generation/select_subquad.h"
 #include "sample_generation/util.h"
 
@@ -68,10 +69,16 @@ class SampleSet {
                          const int x_pos,
                          const int y_pos);
 
-  // This function should be called after every power of 2 samples.
+  // This function should be called after every power of 2 samples. It divides
+  // the strata up into the next elementary (0,2) intervals, and remarks the
+  // occupied strata (using ResetStrata).
   void SubdivideStrata();
 
-  void ResetStrata(const int num_existing_samplesL);
+  // This function clears the strata, and goes through the existing points and
+  // marks the strata.
+  void ResetStrata(const int num_existing_samples);
+  // InitSubsequenceStrata should be called between odd and even powers of two.
+  // It is used to ensure that the subsequences are themselves (0,2) sequences.
   void InitSubsequenceStrata();
 
   // Get all the samples at the end.
@@ -185,60 +192,6 @@ void SampleSet::GenerateFirstSample() {
   AddSample(0, sample);
 }
 
-inline void GetXStrata(const int x_pos,
-                       const int y_pos,
-                       const int strata_index,
-                       const vector<vector<bool>>& strata,
-                       vector<int>* x_strata) {
-  const int strata_x_dim = 1 << (strata.size() - strata_index - 1);
-  const bool is_occupied =
-      strata[strata_index][y_pos*strata_x_dim + x_pos];
-
-  if (!is_occupied) {
-    if (strata_index == 0) {
-      // We're at the Nx1 leaf.
-      x_strata->push_back(x_pos);
-    } else {
-      GetXStrata(x_pos * 2, y_pos / 2, strata_index - 1, strata, x_strata);
-      GetXStrata(x_pos * 2 + 1, y_pos / 2, strata_index - 1, strata, x_strata);
-    }
-  }
-}
-inline void GetYStrata(const int x_pos,
-                       const int y_pos,
-                       const int strata_index,
-                       const vector<vector<bool>>& strata,
-                       vector<int>* y_strata) {
-  const int strata_x_dim = 1 << (strata.size() - strata_index - 1);
-  const bool is_occupied =
-      strata[strata_index][y_pos*strata_x_dim + x_pos];
-
-  if (!is_occupied) {
-    if (strata_x_dim == 1) {
-      // We're at the 1xN leaf.
-      y_strata->push_back(y_pos);
-    } else {
-      GetYStrata(x_pos / 2, y_pos * 2, strata_index + 1, strata, y_strata);
-      GetYStrata(x_pos / 2, y_pos * 2 + 1, strata_index + 1, strata, y_strata);
-    }
-  }
-}
-
-inline std::pair<vector<int>, vector<int>> GetValidStrata(
-    const int x_pos, const int y_pos, const vector<vector<bool>>& strata) {
-  std::pair<vector<int>, vector<int>> valid_strata = {{}, {}};
-
-  if (strata.size() % 2 == 1) {
-    GetXStrata(x_pos, y_pos, strata.size()/2, strata, &valid_strata.first);
-    GetYStrata(x_pos, y_pos, strata.size()/2, strata, &valid_strata.second);
-  } else {
-    GetXStrata(x_pos, y_pos/2, strata.size()/2-1, strata, &valid_strata.first);
-    GetYStrata(x_pos/2, y_pos, strata.size()/2, strata, &valid_strata.second);
-  }
-
-  return valid_strata;
-}
-
 void SampleSet::GenerateNewSample(const int sample_index,
                                   const int x_pos,
                                   const int y_pos) {
@@ -280,6 +233,8 @@ void SampleSet::UpdateStrata(const Point& sample) {
     int y_pos = sample.y * y_width;
     (*strata)[i][y_pos*x_width + x_pos] = true;
 
+    // Every strata within the subsequence corresponds to a 2x2 rectangle of
+    // strata within the whole sequence, so we mark those as occupied.
     if (use_subsequence_strata_ && n_ > 4 && x_width >= 2 && y_width >= 2) {
       (*strata)[i][(y_pos^1)*x_width + x_pos] = true;
       (*strata)[i][y_pos*x_width + (x_pos^1)] = true;

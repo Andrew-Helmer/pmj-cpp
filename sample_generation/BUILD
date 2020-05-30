@@ -17,9 +17,9 @@ cc_library(
 )
 
 cc_library(
-    name = "balance_util",
-    srcs = ["balance_util.cc"],
-    hdrs = ["balance_util.h"],
+    name = "select_subquad",
+    srcs = ["select_subquad.cc"],
+    hdrs = ["select_subquad.h"],
     deps = [":util"]
 )
 
@@ -35,7 +35,7 @@ cc_library(
     srcs = ["pmj.cc"],
     hdrs = ["pmj.h"],
     deps = [
-        ":balance_util",
+        ":select_subquad",
         ":util",
     ]
 )
@@ -45,9 +45,17 @@ cc_library(
     srcs = ["pmj02.cc"],
     hdrs = ["pmj02.h"],
     deps = [
-        ":balance_util",
+        ":pmj02_util",
+        ":select_subquad",
         ":util",
     ]
+)
+
+cc_library(
+    name = "pmj02_util",
+    srcs = ["pmj02_util.cc"],
+    hdrs = ["pmj02_util.h"],
+    deps = []
 )
 
 cc_library(

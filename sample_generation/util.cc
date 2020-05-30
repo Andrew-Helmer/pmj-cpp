@@ -24,7 +24,7 @@
 namespace pmj {
 
 thread_local static std::random_device r;
-thread_local static std::default_random_engine gen(r());
+thread_local static std::default_random_engine gen(0);
 
 double UniformRand(double min, double max) {
   thread_local static std::uniform_real_distribution<double> uniform;
@@ -52,16 +52,25 @@ inline double DistSqTorus(double x1, double y1, double x2, double y2) {
   return (x_diff*x_diff)+(y_diff*y_diff);
 }
 
-int Wrap(const int val,
+inline int Wrap(const int val,
          const int dim) {
   if (val < 0) return val+dim;
   if (val >= dim) return val-dim;
   return val;
 }
 
+inline void UpdateMinDistSq(
+    const Point& candidate, const Point& point, double* min_dist_sq) {
+  double dist_sq = DistSqTorus(point.x, point.y, candidate.x, candidate.y);
+  if (dist_sq < *min_dist_sq) {
+    *min_dist_sq = dist_sq;
+  }
+}
+
 double GetNearestNeighborDistSqTorus(const Point& sample,
                                      const Point* sample_grid[],
-                                     const int dim) {
+                                     const int dim,
+                                     const double max_min_dist_sq) {
   // This function works by using the sample grid, since we know that the points
   // are well-distributed with at most one point in each cell. Not the fastest
   // way to do this, but easy to implement and not horribly slow.
@@ -73,6 +82,7 @@ double GetNearestNeighborDistSqTorus(const Point& sample,
   // can't find any nearer points.
   const int x_pos = sample.x * dim;
   const int y_pos = sample.y * dim;
+
   double min_dist_sq = sqrt(2.0);
   const double grid_size = 1.0 / dim;
   for (int i = 1; i <= dim; i++) {
@@ -98,11 +108,10 @@ double GetNearestNeighborDistSqTorus(const Point& sample,
         min_dist_sq = std::min(min_dist_sq,
                                DistSqTorus(top_pt->x, top_pt->y,
                                            sample.x, sample.y));
+        UpdateMinDistSq(sample, *top_pt, &min_dist_sq);
       }
       if (bottom_pt != nullptr) {
-        min_dist_sq = std::min(min_dist_sq,
-                               DistSqTorus(bottom_pt->x, bottom_pt->y,
-                                           sample.x, sample.y));
+        UpdateMinDistSq(sample, *bottom_pt, &min_dist_sq);
       }
     }
     // Traverse left and right sides, excluding corners (hence the +1, -1).
@@ -114,18 +123,15 @@ double GetNearestNeighborDistSqTorus(const Point& sample,
       const Point* left_pt = sample_grid[wrapped_y_offset*dim + wrapped_x_min];
       const Point* right_pt = sample_grid[wrapped_y_offset*dim + wrapped_x_max];
       if (left_pt != nullptr) {
-        min_dist_sq = std::min(min_dist_sq,
-                               DistSqTorus(left_pt->x, left_pt->y,
-                                           sample.x, sample.y));
+        UpdateMinDistSq(sample, *left_pt, &min_dist_sq);
       }
       if (right_pt != nullptr) {
-        min_dist_sq = std::min(min_dist_sq,
-                               DistSqTorus(right_pt->x, right_pt->y,
-                                           sample.x, sample.y));
+        UpdateMinDistSq(sample, *right_pt, &min_dist_sq);
       }
     }
 
-    if (min_dist_sq < grid_radius_sq) {
+    if (min_dist_sq < grid_radius_sq ||
+        min_dist_sq < max_min_dist_sq) {
       break;
     }
   }
@@ -141,15 +147,18 @@ Point GetBestCandidateOfSamples(const std::vector<Point>& candidates,
   // culling points as we go, but a naive implementation of this was only a tiny
   // bit faster, and the code was uglier, so we'll leave it for now.
   Point best_candidate;
-  double max_dist_sq = 0.0;
+  double max_min_dist_sq = 0.0;
 
   for (int i = 0; i < candidates.size(); i++) {
     Point cand_sample = candidates[i];
     double dist_sq =
-        GetNearestNeighborDistSqTorus(cand_sample, sample_grid, dim);
-    if (dist_sq > max_dist_sq) {
+        GetNearestNeighborDistSqTorus(cand_sample,
+                                      sample_grid,
+                                      dim,
+                                      max_min_dist_sq);
+    if (dist_sq > max_min_dist_sq) {
       best_candidate = cand_sample;
-      max_dist_sq = dist_sq;
+      max_min_dist_sq = dist_sq;
     }
   }
 
@@ -174,6 +183,29 @@ sample_fn GetSamplingFunction(const std::string& algorithm) {
       algorithm == "pmj02-oxplowing" ? &pmj::GetPMJ02SamplesOxPlowing :
       algorithm == "pmj02-no-balance" ? &pmj::GetPMJ02SamplesNoBalance :
       throw std::invalid_argument(algorithm + " is not a valid algorithm.");
+}
+
+std::vector<const Point*> PMJ02Shuffle(const pmj::Point points[],
+                                       const int n) {
+  std::vector<const Point*> shuffled_points(n);
+  for (int i = 0; i < n; i++) {
+    shuffled_points[i] = &points[i];
+  }
+
+  for (int stride = 2; stride <= n; stride *= 2) {
+    for (int i = 0; i < n; i += stride) {
+      if (UniformRand() < 0.5) {
+        for (int j = 0; j < stride/2; j++) {
+          const Point* swap;
+          swap = shuffled_points[i+(stride/2)+j];
+          shuffled_points[i+(stride/2)+j] = shuffled_points[i+j];
+          shuffled_points[i+j] = swap;
+        }
+      }
+    }
+  }
+
+  return shuffled_points;
 }
 
 }  // namespace pmj

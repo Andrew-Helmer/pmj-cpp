@@ -32,6 +32,11 @@ Point GetBestCandidateOfSamples(const std::vector<Point>& candidates,
 typedef std::unique_ptr<pmj::Point[]> (*sample_fn)(int);
 sample_fn GetSamplingFunction(const std::string& algorithm);
 
+// Given a sequence of PMJ02 points, this will shuffle them, while the resulting
+// shuffle will still be a PMJ02 sequence!
+std::vector<const Point*> PMJ02Shuffle(const pmj::Point points[],
+                                       const int n);
+
 }  // namespace pmj
 
 #endif  // SAMPLE_GENERATION_UTIL_H_

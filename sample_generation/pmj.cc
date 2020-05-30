@@ -12,7 +12,6 @@
  *
  * If you're reading this code for the first time and want to understand the
  * algorithm, start with the function "GenerateSamples".
- *
  */
 #include "sample_generation/pmj.h"
 
@@ -34,7 +33,8 @@ static constexpr int kBestCandidateSamples = 10;
 
 /*
  * The SampleSet is a class that contains the generated samples, as well as the
- * currently populated strata.
+ * currently populated strata. It's used to generate new samples within the
+ * unpopulated strata.
  */
 class SampleSet {
  public:
@@ -181,6 +181,9 @@ void SampleSet::AddSample(const int i,
   sample_grid_[y_pos*dim_ + x_pos] = &(samples_[i]);
 }
 
+/*
+ * The core of Christensen et al.'s algorithm.
+ */
 std::unique_ptr<Point[]> GenerateSamples(
     const int num_samples,
     const int num_candidates,
@@ -214,9 +217,10 @@ std::unique_ptr<Point[]> GenerateSamples(
     sample_set.SubdivideStrata();
 
     // We want to make balanced choices here regarding which subquadrants to
-    // use, so we precompute them in a special way (see above).
+    // use, so we precompute them in a special way.
     auto sub_quad_choices =
         (*subquad_func)(sample_set.samples(), sample_set.dim());
+    // Iterate over the quadrants and generate a new point in each quadrant.
     for (int i = 0;
          i < quadrants && 2*quadrants+i < num_samples;
          i++) {

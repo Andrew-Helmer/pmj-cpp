@@ -39,19 +39,17 @@ std::unique_ptr<Point[]> GetProgMultiJitteredSamplesWithBlueNoise(
     const int num_samples);
 
 /*
+ * --------------------------------------------------------------------------
  * These are for experimentation. Ox-Plowing is used by default, as it was in
- * Christensen et al. Hilbert seems better for smooth functions but worse for
- * discontinuous ones. Random is clearly the worst of the three.
+ * Christensen et al. we just have an explicit function here for clarity.
+ * Random performs much worse than Ox-Plowing.
+ * --------------------------------------------------------------------------
  */
 std::unique_ptr<Point[]> GetProgMultiJitteredSamplesRandom(
-    const int num_samples);
-std::unique_ptr<Point[]> GetProgMultiJitteredSamplesHilbert(
     const int num_samples);
 std::unique_ptr<Point[]> GetProgMultiJitteredSamplesOxPlowing(
     const int num_samples);
 std::unique_ptr<Point[]> GetProgMultiJitteredSamplesWithBlueNoiseRandom(
-    const int num_samples);
-std::unique_ptr<Point[]> GetProgMultiJitteredSamplesWithBlueNoiseHilbert(
     const int num_samples);
 std::unique_ptr<Point[]> GetProgMultiJitteredSamplesWithBlueNoiseOxPlowing(
     const int num_samples);

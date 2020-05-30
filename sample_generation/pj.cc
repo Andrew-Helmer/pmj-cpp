@@ -37,7 +37,7 @@ Point GetSample(
                       y_pos*grid_size, (y_pos+1)*grid_size);
 }
 
-void GenPJSamplesForQuadrant(
+void GenerateSamplesForQuadrant(
     const Point& sample,
     const int num_samples,
     const int n,
@@ -49,13 +49,11 @@ void GenPJSamplesForQuadrant(
   // Generate diagonally opposite.
   samples[n+i] = GetSample(x_pos ^ 1, y_pos ^ 1, grid_size);
 
-  // Pick one of the two adjacent cells to generate new sample. This will go
-  // much later in the sequence, so we might not do this if it's more samples
-  // than requested.
   if (2*n+i >= num_samples) {
     return;
   }
 
+  // Pick one of the two adjacent cells to generate new sample.
   int new_x_pos = x_pos;
   int new_y_pos = y_pos;
   if (UniformRand() < 0.5) {
@@ -63,10 +61,9 @@ void GenPJSamplesForQuadrant(
   } else {
     new_y_pos = y_pos ^ 1;
   }
-
   samples[2*n+i] = GetSample(new_x_pos, new_y_pos, grid_size);
 
-  // Do the diagonal of the previous sample.
+  // Generate a sample in the diagonal of the previous cell.
   if (3*n+i >= num_samples) {
     return;
   }
@@ -93,7 +90,7 @@ std::unique_ptr<Point[]> GetProgJitteredSamples(
       int x_pos = sample.x * dim;
       int y_pos = sample.y * dim;
 
-      GenPJSamplesForQuadrant(
+      GenerateSamplesForQuadrant(
           sample, num_samples, n, i, x_pos, y_pos, grid_size, samples.get());
     }
     n *= 4;

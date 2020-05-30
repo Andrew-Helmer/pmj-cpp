@@ -8,13 +8,12 @@
  *
  * Implementation of PMJ(0,2) sequences.
  *
- * This implements Christensen et al.'s balancing characteristic: sub-sequences
- * between odd and even powers of two are themselves (0,2) sequences. This
- * significantly reduces integration errors.
+ * This incorporates Christensen et al.'s balancing characteristic:
+ * sub-sequences between odd and even powers of two are themselves (0,2)
+ * sequences. This significantly reduces integration errors.
  *
  * If you're reading this code for the first time and want to understand the
  * algorithm, start with the function "GenerateSamples".
- *
  */
 #include "sample_generation/pmj02.h"
 
@@ -38,6 +37,11 @@ using std::vector;
 
 static constexpr int kBestCandidateSamples = 10;
 
+/*
+ * The SampleSet is a class that contains the generated samples, as well as the
+ * currently populated strata. It's used to generate new samples within the
+ * unpopulated strata.
+ */
 class SampleSet {
  public:
   explicit SampleSet(const int num_samples,
@@ -63,12 +67,12 @@ class SampleSet {
 
   // This function should be called after every power of 2 samples. It divides
   // the strata up into the next elementary (0,2) intervals, and remarks the
-  // occupied strata (using ResetStrata).
+  // occupied strata (using ResetAndMarkStrata).
   void SubdivideStrata();
 
   // This function clears the strata, and goes through the existing points and
-  // marks the strata.
-  void ResetStrata(const int num_existing_samples);
+  // marks the occupied strata.
+  void ResetAndMarkStrata(const int num_existing_samples);
   // InitSubsequenceStrata should be called between odd and even powers of two.
   // It is used to ensure that the subsequences are themselves (0,2) sequences.
   void InitSubsequenceStrata();
@@ -133,10 +137,10 @@ void SampleSet::SubdivideStrata() {
   // samples 3-4 it's 4x1, 2x2, and 1x4. So every time it goes up by one.
   strata_.resize(strata_.size()+1);
 
-  ResetStrata(old_n);
+  ResetAndMarkStrata(old_n);
 }
 
-void SampleSet::ResetStrata(const int num_existing_samples) {
+void SampleSet::ResetAndMarkStrata(const int num_existing_samples) {
   std::fill(strata_.begin(), strata_.end(), vector<bool>(n_, false));
   std::fill_n(sample_grid_.get(), n_, nullptr);
 
@@ -245,6 +249,9 @@ void SampleSet::AddSample(const int i,
   sample_grid_[y_pos*dim_ + x_pos] = &(samples_[i]);
 }
 
+/*
+ * The core of Christensen et al.'s algorithm.
+ */
 std::unique_ptr<Point[]> GenerateSamples(
     const int num_samples,
     const int num_candidates,
@@ -257,10 +264,10 @@ std::unique_ptr<Point[]> GenerateSamples(
   assert(subquad_func == (&GetSubQuadrantsConsistently) ||
          !subsequence_stratification);
 
-  // Generate first sample.
   sample_set.GenerateFirstSample();
 
-  int n = 1;  // This n is not the same as the one in SampleSet!!
+  // Number of samples from the previous iteration. Always a power of 4.
+  int n = 1;
   while (n < num_samples) {
     sample_set.SubdivideStrata();
 
@@ -278,8 +285,12 @@ std::unique_ptr<Point[]> GenerateSamples(
       }
     }
 
+    // Subdivide the strata, for instance strata of 4x1, 2x2, 1x4 will become
+    // 8x1, 4x2, 2x4, 1x8.
     sample_set.SubdivideStrata();
     if (subsequence_stratification) {
+      // For best error, we want both all the points and the next n points to
+      // be well stratified. We achieve this with subsequence strata.
       sample_set.InitSubsequenceStrata();
     }
 
@@ -291,7 +302,11 @@ std::unique_ptr<Point[]> GenerateSamples(
     }
 
     if (subsequence_stratification) {
-      sample_set.ResetStrata(3*n);
+      // We don't want these next n samples to be a (0,2) sequence with the
+      // subsequent n, but we do want them to be part of the (0,2) sequence for
+      // the full 4*n, so we reset the strata and re-initialize the subsequence
+      // strata.
+      sample_set.ResetAndMarkStrata(3*n);
       sample_set.InitSubsequenceStrata();
     }
 

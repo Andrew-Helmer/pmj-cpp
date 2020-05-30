@@ -42,8 +42,10 @@ std::unique_ptr<Point[]> GetPMJ02SamplesWithBlueNoise(
     const int num_samples);
 
 /*
+ * -----------------------------------------------------------------------
  * These functions are just for experimentation, but likely not useful for
  * real purposes, since they perform worse than the ones above.
+ * -----------------------------------------------------------------------
  */
 
 // Generates progressive multi-jittered (0,2) samples, but instead of

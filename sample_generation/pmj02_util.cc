@@ -22,10 +22,10 @@ using std::vector;
 
 namespace {
 void GetXStrata(const int x_pos,
-                       const int y_pos,
-                       const int strata_index,
-                       const vector<vector<bool>>& strata,
-                       vector<int>* x_strata) {
+                const int y_pos,
+                const int strata_index,
+                const vector<vector<bool>>& strata,
+                vector<int>* x_strata) {
   const int strata_x_dim = 1 << (strata.size() - strata_index - 1);
   const bool is_occupied =
       strata[strata_index][y_pos*strata_x_dim + x_pos];
@@ -41,10 +41,10 @@ void GetXStrata(const int x_pos,
   }
 }
 void GetYStrata(const int x_pos,
-                       const int y_pos,
-                       const int strata_index,
-                       const vector<vector<bool>>& strata,
-                       vector<int>* y_strata) {
+                const int y_pos,
+                const int strata_index,
+                const vector<vector<bool>>& strata,
+                vector<int>* y_strata) {
   const int strata_x_dim = 1 << (strata.size() - strata_index - 1);
   const bool is_occupied =
       strata[strata_index][y_pos*strata_x_dim + x_pos];

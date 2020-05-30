@@ -37,7 +37,7 @@
 #include <utility>
 #include <vector>
 
-#include "sample_generation/balance_util.h"
+#include "sample_generation/select_subquad.h"
 #include "sample_generation/util.h"
 
 namespace pmj {

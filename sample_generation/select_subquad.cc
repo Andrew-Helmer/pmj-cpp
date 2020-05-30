@@ -1,5 +1,12 @@
-// Copyright 2020 Andrew Helmer
-#include "sample_generation/balance_util.h"
+/*
+ * Copyright (C) Andrew Helmer 2020.
+ *
+ * Licensed under MIT Open-Source License: see LICENSE. If you use this code, or
+ * you generate sample sets that you use, I'd appreciate a credit in the source
+ * code of your software. Just my name and/or a link to the GitHub project.
+ * Thanks!
+ */
+#include "sample_generation/select_subquad.h"
 
 #include <iostream>
 #include <utility>
@@ -79,45 +86,64 @@ std::vector<std::pair<int, int>> GetSubQuadrantsOxPlowing(
     quadrant_order[quadrant_index] = i;
   }
 
-  std::vector<int> choice_balance_x(quad_dim);
-  std::vector<int> choice_balance_y(quad_dim);
-  bool up = true;
-  for (int col = 0; col < quad_dim; col++) {
-    up = !up;
-    for (int i = 0; i < quad_dim; i++) {
-      int row = up ? i : quad_dim - i - 1;
-      bool last = (i == quad_dim - 1);
+  // This method doesn't always work successfully, so we try a few times. In
+  // the worst case, we'll always give a valid selection at the end anyway. In
+  // practice, it virtually always succeeds within 10 attempts.
+  for (int attempt = 0; attempt < 10; attempt++) {
+    std::vector<int> choice_balance_x(quad_dim);
+    std::vector<int> choice_balance_y(quad_dim);
+    bool up = true;
+    for (int col = 0; col < quad_dim; col++) {
+      up = !up;
+      for (int i = 0; i < quad_dim; i++) {
+        int row = up ? i : quad_dim - i - 1;
+        bool last = (i == quad_dim - 1);
 
-      int quadrant_index = row*quad_dim + col;
-      int x_pos = first_cells[2*quadrant_index];
-      int y_pos = first_cells[2*quadrant_index+1];
+        int quadrant_index = row*quad_dim + col;
+        int x_pos = first_cells[2*quadrant_index];
+        int y_pos = first_cells[2*quadrant_index+1];
 
-      int balance_y = choice_balance_y[row];
-      int balance_x = choice_balance_x[col];
+        int balance_y = choice_balance_y[row];
+        int balance_x = choice_balance_x[col];
 
-      bool swap_x = false;
-      bool swap_y = false;
+        bool swap_x = false;
+        bool swap_y = false;
 
-      if (balance_y != 0 && !last) {
-        swap_y = (balance_y > 0) == (y_pos & 1);
-        swap_x = !swap_y;
-      } else if (balance_x != 0) {
-        swap_x = (balance_x > 0) == (x_pos & 1);
-        swap_y = !swap_x;
-      } else {
-        swap_x = UniformRand() < 0.5;
-        swap_y = !swap_x;
+        if (balance_y != 0 && !last) {
+          swap_y = (balance_y > 0) == (y_pos & 1);
+          swap_x = !swap_y;
+        } else if (balance_x != 0) {
+          swap_x = (balance_x > 0) == (x_pos & 1);
+          swap_y = !swap_x;
+        } else {
+          swap_x = UniformRand() < 0.5;
+          swap_y = !swap_x;
+        }
+
+        x_pos = swap_x ? x_pos ^ 1 : x_pos;
+        y_pos = swap_y ? y_pos ^ 1 : y_pos;
+
+        choices[quadrant_order[quadrant_index]].first = x_pos;
+        choices[quadrant_order[quadrant_index]].second = y_pos;
+
+        choice_balance_x[col] += (x_pos & 1) ? 1 : -1;
+        choice_balance_y[row] += (y_pos & 1) ? 1 : -1;
       }
-
-      x_pos = swap_x ? x_pos ^ 1 : x_pos;
-      y_pos = swap_y ? y_pos ^ 1 : y_pos;
-
-      choices[quadrant_order[quadrant_index]].first = x_pos;
-      choices[quadrant_order[quadrant_index]].second = y_pos;
-
-      choice_balance_x[col] += (x_pos & 1) ? 1 : -1;
-      choice_balance_y[row] += (y_pos & 1) ? 1 : -1;
     }
+
+    // Always unbalanced, just return.
+    if (n == 1) {
+      return choices;
+    }
+
+    bool is_balanced = true;
+    for (int row = 0; row < quad_dim; row++) {
+      if (choice_balance_y[row] != 0) {
+        is_balanced = false;
+        break;
+      }
+    }
+    if (is_balanced) break;
   }
 
   return choices;

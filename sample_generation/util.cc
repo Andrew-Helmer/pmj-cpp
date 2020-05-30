@@ -185,6 +185,14 @@ sample_fn GetSamplingFunction(const std::string& algorithm) {
       throw std::invalid_argument(algorithm + " is not a valid algorithm.");
 }
 
+/*
+ * This is kind of like a binary tree shuffle. Easy to think about for 4 points.
+ * We can swap points 1 and 2, and we can swap 3 and 4, and we can swap the
+ * pairs (1,2) and (3,4), but we can't do anything else. So 2143 is a possible
+ * sequence, but 1324 is now. This works because in a PMJ(0,2) sequence, every
+ * multiple of a power of two is also a valid PMJ(0,2) sequence, at least if
+ * it's constructed using the ShuffleSwap subquadrant selection.
+ */
 std::vector<const Point*> PMJ02Shuffle(const pmj::Point points[],
                                        const int n) {
   std::vector<const Point*> shuffled_points(n);

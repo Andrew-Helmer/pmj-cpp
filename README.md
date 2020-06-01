@@ -11,7 +11,7 @@ Much thanks to Per Christensen and Matt Pharr for help and encouragement with th
 These sample sequences are really great for certain types of Monte Carlo integration problems, especially for use in computer graphics rendering. Here's one such sequence, with a subdividing grid to illustrate the most basic progressive stratification.
 
 <p align="center">
-<img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/pmj02bn.gif'>
+<img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/pmj02bn.gif'><br>
 <sup><a href="https://colab.research.google.com/drive/10Tm6sKo0CGhhQfjHnG7b3tVyNFRlA1HZ?usp=sharing">Generated with this Colab notebook.</a></sup>
 </p>
 
@@ -34,7 +34,7 @@ The PMJ(0,2) or pmj02 sample sequence has the property that any prefix of the sa
 This yields extremely good convergence on test integrals, especially at powers of two for the PMJ(0,2) sequence. Note that both uniform random sampling, also known as "jittered" sampling, and [best-candidate sampling](http://www.pbr-book.org/3ed-2018/Sampling_and_Reconstruction/Maximized_Minimal_Distance_Sampler.html) converge at a rate of approximately N<sup>-.5</sup>. Refer to Christensen et al. for comparison against more sample sequences.
 
 <p align="center">
-  <img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/error_analysis.svg'>
+  <img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/error_analysis.svg'><br>
   <sup><a href="https://colab.research.google.com/drive/1LPlk7rm_0v20UDsCG6ZL_NuhSj7ymA-h?usp=sharing">Plots generated with this Colab notebook</a></sup>
 </p>
 

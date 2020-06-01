@@ -14,6 +14,14 @@ These sample sequences are really great for certain types of Monte Carlo integra
 <img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/pmj02bn.gif'>
 </p>
 
+## Using the Sample Sequences for Rendering
+
+Also provided are some precomputed sample sequences in the [sample_sequences directory](/sample_sequences), to make it easy for you. See the [Sample Usage Documentation](docs/sample_usage.md).
+
+## Using the Code (Building and Generating Your Own Samples)
+
+See the [Code Usage Documentation](docs/code_usage.md).
+
 ## Sequence Properties and Convergence
 
 The PMJ(0,2) or pmj02 sample sequence has the property that any prefix of the samples are stratified on every elementary (0,2) interval.
@@ -39,11 +47,3 @@ The Progressive Multi-Jittering with Blue Noise sequence, or pmjbn, doesn't have
 ## Licensing
 
 See the [LICENSE](/LICENSE).
-
-## Using the Sample Sequences
-
-See the [Sample Usage Documentation](docs/sample_usage.md).
-
-## Using the Code
-
-See the [Code Usage Documentation](docs/code_usage.md).

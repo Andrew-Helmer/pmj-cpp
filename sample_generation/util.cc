@@ -25,7 +25,7 @@
 namespace pmj {
 
 thread_local static std::random_device r;
-thread_local static std::default_random_engine gen(0);
+thread_local static std::default_random_engine gen(r());
 
 double UniformRand(double min, double max) {
   thread_local static std::uniform_real_distribution<double> uniform;

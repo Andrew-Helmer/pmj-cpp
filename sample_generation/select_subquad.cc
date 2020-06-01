@@ -1,10 +1,10 @@
 /*
  * Copyright (C) Andrew Helmer 2020.
+ * Licensed under MIT Open-Source License: see LICENSE.
  *
- * Licensed under MIT Open-Source License: see LICENSE. If you use this code, or
- * you generate sample sets that you use, I'd appreciate a credit in the source
- * code of your software. Just my name and/or a link to the GitHub project.
- * Thanks!
+ * This file implements different methods to select subquadrants between odd
+ * and even powers of two. OxPlowing is best for PMJ sequences, and SwapXOrY is
+ * best for PMJ(0,2) sequences.
  */
 #include "sample_generation/select_subquad.h"
 

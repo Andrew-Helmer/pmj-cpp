@@ -1,4 +1,10 @@
-// Copyright 2020 Andrew Helmer
+/*
+ * Copyright (C) Andrew Helmer 2020.
+ * Licensed under MIT Open-Source License: see LICENSE.
+ *
+ * Implements a few utility functions useful across the code base, especially
+ * random number generation.
+ */
 #ifndef SAMPLE_GENERATION_UTIL_H_
 #define SAMPLE_GENERATION_UTIL_H_
 
@@ -33,8 +39,8 @@ typedef std::unique_ptr<pmj::Point[]> (*sample_fn)(int);
 sample_fn GetSamplingFunction(const std::string& algorithm);
 
 // Given a sequence of PMJ02 points, this will shuffle them, while the resulting
-// shuffle will still be a PMJ02 sequence. We don't actually use it anywhere,
-// this is just to show how easy it is.
+// shuffle will still be a progressive (0,2) sequence. We don't actually use it
+// anywhere, this is just to show how easy it is.
 std::vector<const Point*> ShufflePMJ02Sequence(const pmj::Point points[],
                                                const int n);
 

@@ -1,4 +1,11 @@
-// Copyright 2020 Andrew Helmer
+/*
+ * Copyright (C) Andrew Helmer 2020.
+ * Licensed under MIT Open-Source License: see LICENSE.
+ *
+ * Implements the most basic algorithm from Christensen et al., Progressive
+ * Jittered Sampling. There's really no reason to use this, but the code could
+ * be instructional.
+ */
 #ifndef SAMPLE_GENERATION_PJ_H_
 #define SAMPLE_GENERATION_PJ_H_
 

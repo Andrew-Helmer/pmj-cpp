@@ -1,11 +1,8 @@
 /*
  * Copyright (C) Andrew Helmer 2020.
+ * Licensed under MIT Open-Source License: see LICENSE.
  *
- * Licensed under MIT Open-Source License: see LICENSE. If you use this code, or
- * you generate sample sets that you use, I'd appreciate a credit in the source
- * code of your software. Just my name and/or a link to the GitHub project.
- * Thanks!
- * Functionality used for PMJ(0,2) sampling.
+ * Really just implements Matt Pharr's algorithm for speeding up PMJ(0,2).
  */
 #ifndef SAMPLE_GENERATION_PMJ02_UTIL_H_
 #define SAMPLE_GENERATION_PMJ02_UTIL_H_

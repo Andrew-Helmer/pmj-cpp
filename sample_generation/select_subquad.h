@@ -1,10 +1,6 @@
 /*
  * Copyright (C) Andrew Helmer 2020.
- *
- * Licensed under MIT Open-Source License: see LICENSE. If you use this code, or
- * you generate sample sets that you use, I'd appreciate a credit in the source
- * code of your software. Just my name and/or a link to the GitHub project.
- * Thanks!
+ * Licensed under MIT Open-Source License: see LICENSE.
  *
  * This file implements different methods of selecting the subquadrants in
  * between odd and even powers of 4 for the PMJ and PMJ02 algorithms. Compared

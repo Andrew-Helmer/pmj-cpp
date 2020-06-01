@@ -1,10 +1,6 @@
 /*
  * Copyright (C) Andrew Helmer 2020.
- *
- * Licensed under MIT Open-Source License: see LICENSE. If you use this code, or
- * you generate sample sets that you use, I'd appreciate a credit in the source
- * code of your software. Just my name and/or a link to the GitHub project.
- * Thanks!
+ * Licensed under MIT Open-Source License: see LICENSE.
  *
  * Implementation of Progressive Jittered sequences from
  * "Progressive Multi-Jittered Sample Sequences", Christensen et al. 2018. This

@@ -29,7 +29,7 @@
 namespace pmj {
 namespace {
 
-static constexpr int kBestCandidateSamples = 10;
+static constexpr int kBestCandidateSamples = 100;
 
 /*
  * The SampleSet is a class that contains the generated samples, as well as the

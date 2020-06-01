@@ -34,4 +34,4 @@ Cranley-Patterson Rotations (i.e. jittering the entire sample sequence and wrapp
 
 ## Stratification in More Dimensions
 
-Christensen et al. describe an algorithm to take 2D PMJ(0,2) sequences and shuffle them to have good stratification in higher dimensions. [See Section 11 (Discussion) of their paper](https://graphics.pixar.com/library/ProgressiveMultiJitteredSampling/paper.pdf).
+Christensen et al. describe an offline algorithm to take precomputed 2D PMJ(0,2) sequences and shuffle them to have good stratification in higher dimensions. [See Section 11 (Discussion) of their paper](https://graphics.pixar.com/library/ProgressiveMultiJitteredSampling/paper.pdf).

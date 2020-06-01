@@ -170,16 +170,17 @@ Point GetBestCandidateOfSamples(const std::vector<Point>& candidates,
 
 sample_fn GetSamplingFunction(const std::string& algorithm) {
   static const std::unordered_map<std::string, sample_fn> kAlgorithmMap = {
-    {"pj", &pmj::GetProgJitteredSamples},
-    {"pmj", &pmj::GetProgMultiJitteredSamples},
-    {"pmjbn", &pmj::GetProgMultiJitteredSamplesWithBlueNoise},
-    {"pmj02", &pmj::GetPMJ02Samples},
-    {"pmj02bn", &pmj::GetPMJ02SamplesWithBlueNoise},
+    {"uniform", &GetUniformRandomSamples},
+    {"pj", &GetProgJitteredSamples},
+    {"pmj", &GetProgMultiJitteredSamples},
+    {"pmjbn", &GetProgMultiJitteredSamplesWithBlueNoise},
+    {"pmj02", &GetPMJ02Samples},
+    {"pmj02bn", &GetPMJ02SamplesWithBlueNoise},
     /* Experimental/Explicit Algorithms */
-    {"pmj-random", &pmj::GetProgMultiJitteredSamplesRandom},
-    {"pmj-oxplowing", &pmj::GetProgMultiJitteredSamplesOxPlowing},
-    {"pmj02-oxplowing", &pmj::GetProgMultiJitteredSamplesOxPlowing},
-    {"pmj02-no-balance", &pmj::GetPMJ02SamplesNoBalance},
+    {"pmj-random", &GetProgMultiJitteredSamplesRandom},
+    {"pmj-oxplowing", &GetProgMultiJitteredSamplesOxPlowing},
+    {"pmj02-oxplowing", &GetProgMultiJitteredSamplesOxPlowing},
+    {"pmj02-no-balance", &GetPMJ02SamplesNoBalance},
   };
 
   auto find_iterator = kAlgorithmMap.find(algorithm);
@@ -207,6 +208,17 @@ std::vector<const Point*> ShufflePMJ02Sequence(const pmj::Point points[],
   }
 
   return shuffled_points;
+}
+
+std::unique_ptr<Point[]> GetUniformRandomSamples(
+    const int num_samples) {
+  auto samples = std::make_unique<Point[]>(num_samples);
+
+  for (int i = 0; i < num_samples; i++) {
+    samples[i] = {UniformRand(), UniformRand()};
+  }
+
+  return samples;
 }
 
 }  // namespace pmj

@@ -38,6 +38,10 @@ sample_fn GetSamplingFunction(const std::string& algorithm);
 std::vector<const Point*> ShufflePMJ02Sequence(const pmj::Point points[],
                                                const int n);
 
+// Just for comparison with performance testing and error analysis.
+std::unique_ptr<Point[]> GetUniformRandomSamples(
+    const int num_samples);
+
 }  // namespace pmj
 
 #endif  // SAMPLE_GENERATION_UTIL_H_

@@ -34,7 +34,7 @@ ABSL_FLAG(std::string, distr, "disc,gaussian,bilinear",
     "Which distributions to use for the error analysis.");
 ABSL_FLAG(std::string, algorithms, "all",
     "Comma-separated list of algorithms to run. Use 'all' for all. Options are"
-    "'pj', 'pmj', 'pmjbn', 'pmj02', 'pmj02bn'");
+    "'uniform', 'pj', 'pmj', 'pmjbn', 'pmj02', 'pmj02bn'");
 ABSL_FLAG(std::string, pyfile, "",
     "If set, this will write all the analysis data into a valid python file, "
     "rather than outputting it. This python file can be executed to create "
@@ -117,7 +117,7 @@ class AnalysisOutput {
       errors_.push_back({distribution, {}});
     } else {
       std::cout << distribution << "\n";
-      std::cout << "\t True Average: " << true_avg << "\n";
+      std::cout << "\tTrue Average: " << true_avg << "\n";
     }
   }
   void SetSamplingResults(const string& method,
@@ -127,9 +127,8 @@ class AnalysisOutput {
       errors_.back().second.push_back({method, errors});
     } else {
       std::cout << "\t" << method << "\n";
-      for (const double error : errors) {
-        std::cout << "\t\t" << error << "\n";
-      }
+      std::cout << "\t\tFinal Error (" << errors.size() << " Samples): "
+                << errors.back() << "\n";
     }
   }
   void Finish() {
@@ -170,13 +169,16 @@ int main(int argc, char *argv[]) {
 
   std::vector<std::string> algorithms;
   if (absl::GetFlag(FLAGS_algorithms) == "all") {
-    algorithms = {"pj", "pmj", "pmjbn", "pmj02", "pmj02bn"};
+    algorithms = {"uniform", "pj", "pmj", "pmjbn", "pmj02", "pmj02bn"};
   } else {
     algorithms = absl::StrSplit(absl::GetFlag(FLAGS_algorithms), ',');
   }
 
   const int num_samples = absl::GetFlag(FLAGS_max_n);
   const int runs = absl::GetFlag(FLAGS_runs);
+
+  // Full double precision.
+  std::cout.precision(17);
 
   AnalysisOutput output(absl::GetFlag(FLAGS_pyfile));
 

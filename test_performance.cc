@@ -28,7 +28,7 @@ ABSL_FLAG(int, n, 65536,
 ABSL_FLAG(int, runs, 16, "The number of runs to make for each algorithm");
 ABSL_FLAG(std::string, algorithms, "all",
     "Comma-separated list of algorithms to run. Use 'all' for all. Options are"
-    "'pj', 'pmj', 'pmjbn', 'pmj02', 'pmj02bn'");
+    "'uniform', 'pj', 'pmj', 'pmjbn', 'pmj02', 'pmj02bn'");
 
 namespace chrono = std::chrono;
 
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
 
   vector<string> algorithms_list = {"pmj02"};
   if (absl::GetFlag(FLAGS_algorithms) == "all") {
-    algorithms_list = {"pj", "pmj", "pmjbn", "pmj02", "pmj02bn"};
+    algorithms_list = {"uniform", "pj", "pmj", "pmjbn", "pmj02", "pmj02bn"};
   } else {
     algorithms_list = absl::StrSplit(absl::GetFlag(FLAGS_algorithms), ',');
   }

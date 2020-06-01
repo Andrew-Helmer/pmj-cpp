@@ -87,11 +87,12 @@ class SampleSet {
 
   std::unique_ptr<Point[]> samples_;
 
-  // Vector bool is usually implemented as a bitset!
-  // This could be significantly optimized, especially for best-candidate
+  // This could be SIGNIFICANTLY optimized, especially for best-candidate
   // sampling, by actually storing these as a binary tree, rather than a linear
   // array, where each node represents whether there are any unoccupied strata
-  // in a range. This would be similar to Matt Pharr's optimization for PMJ02.
+  // in a range. Then for each sample, you could traverse the tree to get the
+  // unoccupied strata. This would be similar to Matt Pharr's optimization for
+  // PMJ02.
   std::vector<bool> x_strata_ {false};
   std::vector<bool> y_strata_ {false};
 

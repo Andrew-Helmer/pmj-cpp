@@ -36,7 +36,7 @@ This yields extremely good convergence on test integrals, especially at powers o
 <img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/error_analysis.svg'>
 </p>
 
-It's also very easy to shuffle the ordering of points in a PMJ(0,2) sequence to generate another PMJ(0,2) sequence. Check out [the section on shuffling](docs/sample_usage.md#Shuffling).
+[Plot generated with this Colab notebook](https://colab.research.google.com/drive/1LPlk7rm_0v20UDsCG6ZL_NuhSj7ymA-h?usp=sharing).
 
 The Progressive Multi-Jittered Sequence with Blue Noise, or pmjbn, doesn't have as good convergence as pmj02, but it does have very nice blue noise properties, while still having better convergence than best-candidate sampling. This animation shows how the samples are (mostly) distributed far away from each other at any given number of samples.
 

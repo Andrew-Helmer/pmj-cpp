@@ -33,10 +33,9 @@ The PMJ(0,2) or pmj02 sample sequence has the property that any prefix of the sa
 This yields extremely good convergence on test integrals, especially at powers of two for the PMJ(0,2) sequence. Note that both uniform random sampling, also known as "jittered" sampling, and [best-candidate sampling](http://www.pbr-book.org/3ed-2018/Sampling_and_Reconstruction/Maximized_Minimal_Distance_Sampler.html) converge at a rate of approximately N<sup>-.5</sup>. Refer to Christensen et al. for comparison against more sample sequences.
 
 <p align="center">
-<img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/error_analysis.svg'>
+  <img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/error_analysis.svg'>
+  <sup><a href="https://colab.research.google.com/drive/1LPlk7rm_0v20UDsCG6ZL_NuhSj7ymA-h?usp=sharing">Plots generated with this Colab notebook</a></sup>
 </p>
-
-[Plot generated with this Colab notebook](https://colab.research.google.com/drive/1LPlk7rm_0v20UDsCG6ZL_NuhSj7ymA-h?usp=sharing).
 
 The Progressive Multi-Jittered Sequence with Blue Noise, or pmjbn, doesn't have as good convergence as pmj02, but it does have very nice blue noise properties, while still having better convergence than best-candidate sampling. This animation shows how the samples are (mostly) distributed far away from each other at any given number of samples.
 

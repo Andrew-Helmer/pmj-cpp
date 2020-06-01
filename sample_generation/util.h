@@ -33,7 +33,8 @@ typedef std::unique_ptr<pmj::Point[]> (*sample_fn)(int);
 sample_fn GetSamplingFunction(const std::string& algorithm);
 
 // Given a sequence of PMJ02 points, this will shuffle them, while the resulting
-// shuffle will still be a PMJ02 sequence!
+// shuffle will still be a PMJ02 sequence. We don't actually use it anywhere,
+// this is just to show how easy it is.
 std::vector<const Point*> ShufflePMJ02Sequence(const pmj::Point points[],
                                                const int n);
 

@@ -220,7 +220,7 @@ void SampleSet::AddSample(const int i,
 std::unique_ptr<Point[]> GenerateSamples(
     const int num_samples,
     const int num_candidates,
-    const subquad_fn subquad_func = &GetSubQuadrantsShuffleSwap) {
+    const subquad_fn subquad_func = &GetSubQuadrantsSwapXOrY) {
   SampleSet sample_set(num_samples, num_candidates);
 
   sample_set.GenerateFirstSample();
@@ -233,13 +233,11 @@ std::unique_ptr<Point[]> GenerateSamples(
     // For every sample, we first generate the diagonally opposite one at the
     // current grid level. Although we shuffle to visit them in a different
     // order.
-    std::vector<const Point*> shuffled_pts =
-        ShufflePMJ02Sequence(sample_set.samples(), n);
     for (int i = 0; i < n && n+i < num_samples; i++) {
-      const auto* sample = shuffled_pts[i];
+      const Point& sample = sample_set.sample(i);
 
-      int x_pos = sample->x * sample_set.dim();
-      int y_pos = sample->y * sample_set.dim();
+      int x_pos = sample.x * sample_set.dim();
+      int y_pos = sample.y * sample_set.dim();
 
       sample_set.GenerateNewSample(n+i, x_pos ^ 1, y_pos ^ 1);
       if (n+i >= num_samples) {

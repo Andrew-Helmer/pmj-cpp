@@ -39,7 +39,7 @@ std::vector<std::pair<int, int>> GetSubQuadrantsRandomly(
   return choices;
 }
 
-std::vector<std::pair<int, int>> GetSubQuadrantsShuffleSwap(
+std::vector<std::pair<int, int>> GetSubQuadrantsSwapXOrY(
     const Point samples[],
     const int dim) {
   const int quad_dim = dim / 2;
@@ -47,15 +47,18 @@ std::vector<std::pair<int, int>> GetSubQuadrantsShuffleSwap(
 
   std::vector<std::pair<int, int>> choices(n);
 
-  const std::vector<const Point*> shuffled_points =
-      ShufflePMJ02Sequence(samples, 2*n);
-  for (int i = 0; i < n; i++) {
-    const Point* sample = shuffled_points[i];
-    int x_pos = sample->x * dim;
-    int y_pos = sample->y * dim;
+  const bool swap_x = UniformRand() < 0.5;
 
-    choices[i].first = x_pos ^ 1;
-    choices[i].second = y_pos;
+  for (int i = 0; i < n; i++) {
+    const Point& sample = samples[i];
+    int x_pos = sample.x * dim;
+    int y_pos = sample.y * dim;
+
+    if (swap_x) x_pos = x_pos ^ 1;
+    else
+      y_pos = y_pos ^ 1;
+
+    choices[i] = {x_pos, y_pos};
   }
 
   return choices;

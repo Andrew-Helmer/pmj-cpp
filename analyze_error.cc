@@ -39,9 +39,9 @@ ABSL_FLAG(std::string, pyfile, "",
     "If set, this will write all the analysis data into a valid python file, "
     "rather than outputting it. This python file can be executed to create "
     "a dictionary representing all the results.");
-ABSL_FLAG(int, max_n, 2048,
+ABSL_FLAG(int, max_n, 1024,
     "The number of samples to generate in each run.");
-ABSL_FLAG(int, runs, 2048, "The number of runs to make for each algorithm");
+ABSL_FLAG(int, runs, 1024, "The number of runs to make for each algorithm");
 
 namespace {
 
@@ -185,15 +185,20 @@ int main(int argc, char *argv[]) {
 
     // For some of the distributions, they have analytical results, but why not
     // just get a good numerical one. Makes it easier to add more distributions
-    // later.
-    constexpr int kGroundTruthSamples = 50000000;
-    double avg;
-    for (int i = 0; i < kGroundTruthSamples; i++) {
-      pmj::Point point;
-      point.x = pmj::UniformRand();
-      point.y = pmj::UniformRand();
-      double val = (*dist_func)(point);
-      avg = val/(i + 1.0) + static_cast<double>(i)/(i + 1.0)*avg;
+    // later. We just use stratified sampling with a lot of samples.
+    constexpr int kStratificationDim = 2048;
+    constexpr int kTotalSamples = kStratificationDim*kStratificationDim;
+    double avg = 0.0;
+    for (int y = 0; y < kStratificationDim; y++) {
+      for (int x = 0; x < kStratificationDim; x++) {
+        pmj::Point point;
+        point.x = pmj::UniformRand(static_cast<double>(x)/kStratificationDim,
+                                   static_cast<double>(x+1)/kStratificationDim);
+        point.y = pmj::UniformRand(static_cast<double>(y)/kStratificationDim,
+                                   static_cast<double>(y+1)/kStratificationDim);
+        double val = (*dist_func)(point);
+        avg += val/kTotalSamples;
+      }
     }
 
     output.SetDistribution(distribution, avg);

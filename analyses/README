@@ -1,3 +1,7 @@
 These python files were generated using the analyze_error tool. The error_analysis.py file contains the data used to generate the convergence plot in the main README.md. The pmj02_balance_analysis compares the convergence of PMJ(0,2) sequences with random subquadrant selection, vs. ox-plowing, vs. the sub-sequence stratification.
 
-Sorry there isn't yet any documentation on how to use these files. I'm working on an example Colab notebook.
+Each python file declares a variable "analysis". 
+
+Analysis is a dictionary, where the keys are different distributions (e.g. bilinear, gaussian, disc). The values are dictionaries too, where each key is a sampling method (e.g. uniform, pmj02), and each value is a list of errors, corresponding to the number of samples.
+
+Here is an example Colab notebook which utilizes this: https://colab.research.google.com/drive/1LPlk7rm_0v20UDsCG6ZL_NuhSj7ymA-h?usp=sharing

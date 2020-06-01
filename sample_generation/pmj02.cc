@@ -97,7 +97,7 @@ class SampleSet {
   std::unique_ptr<Point[]> samples_;
 
   // Contains all strata of elementary (0,2) intervals. Each value is true/false
-  // for if a sample resides there.
+  // representing if a sample point resides there.
   vector<vector<bool>> strata_ {{false}};
 
   // The sample grid is used for nearest neighbor lookups.
@@ -236,9 +236,6 @@ std::unique_ptr<Point[]> GenerateSamples(
       int y_pos = sample.y * sample_set.dim();
 
       sample_set.GenerateNewSample(n+i, x_pos ^ 1, y_pos ^ 1);
-      if (n+i >= num_samples) {
-        break;
-      }
     }
 
     // Subdivide the strata, for instance strata of 4x1, 2x2, 1x4 will become
@@ -255,7 +252,7 @@ std::unique_ptr<Point[]> GenerateSamples(
     for (int i = 0; i < n && 3*n+i < num_samples; i++) {
       // Get the one diagonally opposite to the one we just got.
       sample_set.GenerateNewSample(
-          3*n+i, sub_quad_choices[i].first ^ 1, sub_quad_choices[i].second^ 1);
+          3*n+i, sub_quad_choices[i].first ^ 1, sub_quad_choices[i].second ^ 1);
     }
 
     n *= 4;
@@ -270,7 +267,6 @@ std::unique_ptr<Point[]> GetPMJ02Samples(
     const int num_samples) {
   return GenerateSamples(num_samples, /*num_candidates=*/1);
 }
-
 std::unique_ptr<Point[]> GetPMJ02SamplesWithBlueNoise(
     const int num_samples) {
   return GenerateSamples(num_samples, kBestCandidateSamples);

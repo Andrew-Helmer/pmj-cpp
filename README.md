@@ -38,7 +38,7 @@ The Progressive Multi-Jittering with Blue Noise sequence, or pmjbn, doesn't have
 
 ## Licensing
 
-See the LICENSE.
+See the [LICENSE](/LICENSE).
 
 ## Using the Sample Sequences
 

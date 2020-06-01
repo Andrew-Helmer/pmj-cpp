@@ -12,7 +12,7 @@ These sample sequences are really great for certain types of Monte Carlo integra
 
 <p align="center">
 <img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/pmj02bn.gif'><br>
-<sup><a href="https://colab.research.google.com/drive/10Tm6sKo0CGhhQfjHnG7b3tVyNFRlA1HZ?usp=sharing">Generated with this Colab notebook</a></sup>
+<sup><a href="https://colab.research.google.com/drive/10Tm6sKo0CGhhQfjHnG7b3tVyNFRlA1HZ?usp=sharing">Animation generated with this Colab notebook.</a></sup>
 </p>
 
 ## Using the Sample Sequences for Rendering
@@ -35,7 +35,7 @@ This yields extremely good convergence on test integrals, especially at powers o
 
 <p align="center">
   <img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/error_analysis.svg'><br>
-  <sup><a href="https://colab.research.google.com/drive/1LPlk7rm_0v20UDsCG6ZL_NuhSj7ymA-h?usp=sharing">Plots generated with this Colab notebook</a></sup>
+  <sup><a href="https://colab.research.google.com/drive/1LPlk7rm_0v20UDsCG6ZL_NuhSj7ymA-h?usp=sharing">Plots generated with this Colab notebook.</a></sup>
 </p>
 
 The Progressive Multi-Jittered Sequence with Blue Noise, or pmjbn, doesn't have as good convergence as pmj02, but it does have very nice blue noise properties, while still having better convergence than best-candidate sampling. This animation shows how the samples are (mostly) distributed far away from each other at any given number of samples.

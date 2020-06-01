@@ -30,7 +30,7 @@
 #include "sample_generation/pmj.h"
 #include "sample_generation/pmj02.h"
 
-ABSL_FLAG(std::string, distr, "disc,gaussian",
+ABSL_FLAG(std::string, distr, "disc,gaussian,bilinear",
     "Which distributions to use for the error analysis.");
 ABSL_FLAG(std::string, algorithms, "all",
     "Comma-separated list of algorithms to run. Use 'all' for all. Options are"
@@ -47,23 +47,32 @@ namespace {
 
 using std::string;
 
+/*
+ * These distributions were taken from here:
+ * https://graphics.pixar.com/library/ProgressiveMultiJitteredSampling/pmj_slides.pdf
+ */
 double disc_distr(const pmj::Point& point) {
-  constexpr double radius = 0.8;
+  constexpr double radius = 2.0 / 3.14159265;
   constexpr double radius_sq = radius * radius;
   if (point.x*point.x + point.y*point.y <= radius_sq) return 1.0;
   else
     return 0.0;
 }
 double gaussian_distr(const pmj::Point& point) {
-  double x_sq = point.x*point.x + point.y*point.y;
+  // This is really a scaled gaussian, where the mean (0,0) has a value of 1.
+  double dist_sq = point.x*point.x + point.y*point.y;
 
-  return (1.0/sqrt(2.0 * M_PI)) * exp(-0.5 * x_sq);
+  return exp(-dist_sq);
+}
+double bilinear_distr(const pmj::Point& point) {
+  return point.x * point.y;
 }
 
 typedef double (*dist_fn)(const pmj::Point& point);
   dist_fn GetDistribution(const string& distribution) {
   return distribution == "disc" ? &disc_distr :
-      distribution == "gaussian" ? &gaussian_distr :
+         distribution == "bilinear" ? &bilinear_distr :
+         distribution == "gaussian" ? &gaussian_distr :
       throw std::invalid_argument(distribution
                                   + " is not a valid distribution.");
 }
@@ -173,6 +182,10 @@ int main(int argc, char *argv[]) {
 
   for (const std::string& distribution : distributions) {
     auto dist_func = GetDistribution(distribution);
+
+    // For some of the distributions, they have analytical results, but why not
+    // just get a good numerical one. Makes it easier to add more distributions
+    // later.
     constexpr int kGroundTruthSamples = 50000000;
     double avg;
     for (int i = 0; i < kGroundTruthSamples; i++) {

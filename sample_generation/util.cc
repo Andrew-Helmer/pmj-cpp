@@ -44,7 +44,7 @@ int UniformInt(int min, int max) {
 }
 
 namespace {
-inline double DistSqTorus(double x1, double y1, double x2, double y2) {
+inline double GetToroidalDistSq(double x1, double y1, double x2, double y2) {
   double x_diff = abs(x2-x1);
   if (x_diff > 0.5) x_diff = 1.0 - x_diff;
   double y_diff = abs(y2-y1);
@@ -53,34 +53,36 @@ inline double DistSqTorus(double x1, double y1, double x2, double y2) {
   return (x_diff*x_diff)+(y_diff*y_diff);
 }
 
-inline int Wrap(const int val,
-         const int dim) {
-  if (val < 0) return val+dim;
-  if (val >= dim) return val-dim;
-  return val;
+inline int WrapIndex(const int index,
+                     const int limit) {
+  if (index < 0) return index+limit;
+  if (index >= limit) return index-limit;
+  return index;
 }
 
 inline void UpdateMinDistSq(
     const Point& candidate, const Point& point, double* min_dist_sq) {
-  double dist_sq = DistSqTorus(point.x, point.y, candidate.x, candidate.y);
+  double dist_sq =
+      GetToroidalDistSq(point.x, point.y, candidate.x, candidate.y);
   if (dist_sq < *min_dist_sq) {
     *min_dist_sq = dist_sq;
   }
 }
 
-double GetNearestNeighborDistSqTorus(const Point& sample,
-                                     const Point* sample_grid[],
-                                     const int dim,
-                                     const double max_min_dist_sq) {
+double GetNearestNeighborDistSq(const Point& sample,
+                                const Point* sample_grid[],
+                                const int dim,
+                                const double max_min_dist_sq) {
   // This function works by using the sample grid, since we know that the points
-  // are well-distributed with at most one point in each cell. Not the fastest
-  // way to do this, but easy to implement and not horribly slow.
+  // are well-distributed with at most one point in each cell.
   //
-  // Anyway start with the cells that are adjacent to our current cell and each
+  // Start with the cells that are adjacent to our current cell and each
   // loop iteration we move outwards. We keep a track of the "grid radius",
   // which is the radius of the circle contained within our squares. If the
   // nearest point falls within this radius, we know that the next outward shift
   // can't find any nearer points.
+  //
+  // We do wrap around cells, and compute toroidal distances.
   const int x_pos = sample.x * dim;
   const int y_pos = sample.y * dim;
 
@@ -98,16 +100,16 @@ double GetNearestNeighborDistSqTorus(const Point& sample,
     const int y_max = y_pos + i;
     // Traverse top and bottom boundaries, including corners.
     for (int x_offset = x_min; x_offset <= x_max; x_offset++) {
-      int wrapped_x_offset = Wrap(x_offset, dim);
-      int wrapped_y_min = Wrap(y_min, dim);
-      int wrapped_y_max = Wrap(y_max, dim);
+      int wrapped_x_offset = WrapIndex(x_offset, dim);
+      int wrapped_y_min = WrapIndex(y_min, dim);
+      int wrapped_y_max = WrapIndex(y_max, dim);
 
       const Point* top_pt = sample_grid[wrapped_y_max*dim + wrapped_x_offset];
       const Point* bottom_pt =
           sample_grid[wrapped_y_min*dim + wrapped_x_offset];
       if (top_pt != nullptr) {
         min_dist_sq = std::min(min_dist_sq,
-                               DistSqTorus(top_pt->x, top_pt->y,
+                               GetToroidalDistSq(top_pt->x, top_pt->y,
                                            sample.x, sample.y));
         UpdateMinDistSq(sample, *top_pt, &min_dist_sq);
       }
@@ -117,9 +119,9 @@ double GetNearestNeighborDistSqTorus(const Point& sample,
     }
     // Traverse left and right sides, excluding corners (hence the +1, -1).
     for (int y_offset = y_min+1; y_offset <= y_max-1; y_offset++) {
-      int wrapped_y_offset = Wrap(y_offset, dim);
-      int wrapped_x_min = Wrap(x_min, dim);
-      int wrapped_x_max = Wrap(x_max, dim);
+      int wrapped_y_offset = WrapIndex(y_offset, dim);
+      int wrapped_x_min = WrapIndex(x_min, dim);
+      int wrapped_x_max = WrapIndex(x_max, dim);
 
       const Point* left_pt = sample_grid[wrapped_y_offset*dim + wrapped_x_min];
       const Point* right_pt = sample_grid[wrapped_y_offset*dim + wrapped_x_max];
@@ -153,10 +155,10 @@ Point GetBestCandidateOfSamples(const std::vector<Point>& candidates,
   for (int i = 0; i < candidates.size(); i++) {
     Point cand_sample = candidates[i];
     double dist_sq =
-        GetNearestNeighborDistSqTorus(cand_sample,
-                                      sample_grid,
-                                      dim,
-                                      max_min_dist_sq);
+        GetNearestNeighborDistSq(cand_sample,
+                                 sample_grid,
+                                 dim,
+                                 max_min_dist_sq);
     if (dist_sq > max_min_dist_sq) {
       best_candidate = cand_sample;
       max_min_dist_sq = dist_sq;
@@ -191,28 +193,17 @@ sample_fn GetSamplingFunction(const std::string& algorithm) {
  * This is kind of like a binary tree shuffle. Easy to think about for 4 points.
  * We can swap points 1 and 2, and we can swap 3 and 4, and we can swap the
  * pairs (1,2) and (3,4), but we can't do anything else. So 2143 is a possible
- * sequence, but 1324 is now. This works because in a PMJ(0,2) sequence, every
+ * sequence, but 1324 is not. This works because in a PMJ(0,2) sequence, every
  * multiple of a power of two is also a valid PMJ(0,2) sequence, at least if
  * it's constructed using the ShuffleSwap subquadrant selection.
  */
 std::vector<const Point*> ShufflePMJ02Sequence(const pmj::Point points[],
                                                const int n) {
+  assert((n & (n - 1)) == 0);  // This function only works for powers of two.
   std::vector<const Point*> shuffled_points(n);
+  int random_encode = UniformInt(0, n-1);
   for (int i = 0; i < n; i++) {
-    shuffled_points[i] = &points[i];
-  }
-
-  for (int stride = 2; stride <= n; stride *= 2) {
-    for (int i = 0; i < n; i += stride) {
-      if (UniformRand() < 0.5) {
-        for (int j = 0; j < stride/2; j++) {
-          const Point* swap;
-          swap = shuffled_points[i+(stride/2)+j];
-          shuffled_points[i+(stride/2)+j] = shuffled_points[i+j];
-          shuffled_points[i+j] = swap;
-        }
-      }
-    }
+    shuffled_points[i] = &points[i^random_encode];
   }
 
   return shuffled_points;

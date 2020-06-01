@@ -10,7 +10,7 @@ I've also implemented the basic Progressive Jittered samples, but that's mostly 
 
 ## Precomputed Sample Sequences
 
-There are already sample sets that can be used in the sample_sets directly. You can go ahead and download them! They're formatted as (X, Y) per line.
+I've already precomputed a bunch of sample sequences you can download and use, in the (sample_sequences directory)[/sample_sequences). They're formatted as one (X, Y) point per line.
 
 ## Generating Your Sequences
 
@@ -22,7 +22,7 @@ It's easy to shuffle a balanced\* PMJ(0,2) sequence and still have it be a balan
 1. Generate a random integer <code>r</code> in the range [0, N)
 2. To get the <code>i</code>'th sample in a shuffled sequence, get the <code>(i^r)</code>'th sample from the original sequence, where <code>^</code> is the bit-wise xor operator.
 
-This property is useful for a renderer, because you can compute a hash from the pixel coordinates and ray-bounce, and use that to index into your table, which will help to decorrelate precomputed sample tables. However if you shuffle a sequence with progressive blue-noise characteristics, you'll likely lose the progressive blue noise characteristics.
+This property could be useful for a renderer, because you can compute a hash from the pixel coordinates and ray-bounce, and use that to index into your table, which may help to decorrelate precomputed sample tables. However if you shuffle a sequence with progressive blue-noise characteristics, you'll likely lose the progressive blue noise characteristics.
 
 According to Christensen et al., in Renderman they store hundreds of 4096-sample tables and index into them.
 
@@ -35,3 +35,7 @@ Cranley-Patterson Rotations (i.e. jittering the entire sample sequence and wrapp
 ## Stratification in More Dimensions
 
 Christensen et al. describe an offline algorithm to take precomputed 2D PMJ(0,2) sequences and shuffle them to have good stratification in higher dimensions. [See Section 11 (Discussion) of their paper](https://graphics.pixar.com/library/ProgressiveMultiJitteredSampling/paper.pdf).
+
+## Other info
+
+I'm not really an expert on this stuff, but the aforementioned Discussion section of Christensen et al. may be worth looking at, as well as the [(0,2) Sequence](http://www.pbr-book.org/3ed-2018/Sampling_and_Reconstruction/(0,_2)-Sequence_Sampler.html) section of PBRT.

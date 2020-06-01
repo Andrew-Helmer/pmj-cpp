@@ -21,7 +21,11 @@ namespace pmj {
   /*
    * This will randomly choose once to swap X or swap Y, and will always swap
    * X or Y for all subquadrants. For PMJ02, this ensures that the next set of
-   * samples are themselves a (0,2) sequence.
+   * samples are themselves a (0,2) sequence. Based off some basic analysis,
+   * it seems like this is the only way to maintain this property.
+   *
+   * Credit goes to Simon Brown for discovering this method with his Rust
+   * implementation: https://github.com/sjb3d/pmj
    */
   std::vector<std::pair<int, int>> GetSubQuadrantsSwapXOrY(
     const Point samples[],

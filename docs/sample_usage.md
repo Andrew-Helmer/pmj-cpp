@@ -10,7 +10,7 @@ I've also implemented the basic Progressive Jittered samples, but that's mostly 
 
 ## Precomputed Sample Sequences
 
-I've already precomputed a bunch of sample sequences you can download and use, in the (sample_sequences directory)[/sample_sequences). They're formatted as one (X, Y) point per line.
+I've already precomputed a bunch of sample sequences you can download and use, in the (sample_sequences directory)(/sample_sequences). They're formatted as one (X, Y) point per line.
 
 ## Generating Your Sequences
 
@@ -22,7 +22,7 @@ It's easy to shuffle a balanced\* PMJ(0,2) sequence and still have it be a balan
 1. Generate a random integer <code>r</code> in the range [0, N)
 2. To get the <code>i</code>'th sample in a shuffled sequence, get the <code>(i^r)</code>'th sample from the original sequence, where <code>^</code> is the bit-wise xor operator.
 
-This property could be useful for a renderer, because you can compute a hash from the pixel coordinates and ray-bounce, and use that to index into your table, which may help to decorrelate precomputed sample tables. However if you shuffle a sequence with progressive blue-noise characteristics, you'll likely lose the progressive blue noise characteristics.
+This property may be useful to a renderer, because you can compute a hash from the pixel coordinates and ray-bounce, and use that to index into your table, which may help to decorrelate precomputed sample tables. However if you shuffle a sequence with progressive blue-noise characteristics, you'll likely lose the progressive blue noise characteristics.
 
 According to Christensen et al., in Renderman they store hundreds of 4096-sample tables and index into them.
 

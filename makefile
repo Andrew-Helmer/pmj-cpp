@@ -1,5 +1,5 @@
 INC_DIR = sample_generation
-CXXFLAGS = -Wall -std=c++17 -I$(INC_DIR)/..
+CXXFLAGS = -Wall -std=c++14 -I$(INC_DIR)/..
 SAMPLE_GENERATION_SRCS = $(wildcard sample_generation/*.cc)
 
 all: generate_samples

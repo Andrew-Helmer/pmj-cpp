@@ -1,1 +1,1 @@
-Please see docs/sample_usage.md for information on how to utilize these sample sequences.
+Precomputed sequences from these algorithms. Please see docs/sample_usage.md for information on how to utilize these sample sequences, and the LICENSE for using them.

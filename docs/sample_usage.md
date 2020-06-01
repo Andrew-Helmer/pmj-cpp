@@ -22,7 +22,9 @@ It's extremely easy to shuffle a balanced\* PMJ(0,2) sequence and still have it 
 1. Generate a random integer **r** in the range [0, N)
 2. To get the **i**'th sample in a shuffled sequence, get the *i^r*th sample from the original sequence, where *^* is the bit-wise xor operator.
 
-This property is fantastic for a renderer, because you can compute a hash from the pixel coordinates and ray-bounce, and use that to index into your table, for decorrelated samples. You *might* even be able to get away with a single very large table for your entire renderer! I don't know if anyone has tried this though. In Renderman, they store hundreds of 4096-sample tables and index into them.
+This property is fantastic for a renderer, because you can compute a hash from the pixel coordinates and ray-bounce, and use that to index into your table, for decorrelating the samples. You *might* even be able to get away with a single very large table for your entire renderer! Or maybe this would still cause some less-than-ideal correlations. I don't know if anyone's tried it.
+
+According to Christensen et al., in Renderman they store hundreds of 4096-sample tables and index into them.
 
 If you shuffle a sequence with blue-noise characteristics, you'll likely lose those blue noise characteristics.
 

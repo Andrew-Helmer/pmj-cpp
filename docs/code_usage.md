@@ -5,7 +5,7 @@
 To generate your own sample sequence, you need to build the generate_samples too. This can be done simply with:
 <pre><code>make release</code></pre>
 
-And then running the generate_samples command-line utility, redirecting the standard output to a file:
+And then running the generate_samples command-line tool, redirecting the standard output to a file:
 <pre><code>./generate_samples --n=4096 --algorithm=pmj02 > pmj02_samples.txt</code></pre>
 
 This outputs the sample sequence into the pmj02_samples.txt file.

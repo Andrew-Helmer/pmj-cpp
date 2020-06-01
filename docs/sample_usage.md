@@ -26,7 +26,7 @@ This property is useful for a renderer, because you can compute a hash from the 
 
 According to Christensen et al., in Renderman they store hundreds of 4096-sample tables and index into them.
 
-<sub>\* "Balanced" here refers to the property of sub-sequence stratification. When generating the PMJ(0,2) samples, after generating N samples, where N is an odd power of two, the next N/2 samples, and the N/2 samples after that, should each be stratified in the (0,2) intervals. Refer to Christensen et al. for more information.</sub>
+<sub>\* "Balanced" here refers to the property of sub-sequence stratification. When generating the PMJ(0,2) samples, after generating N samples, where N is an odd power of two, the next N/2 samples, and the N/2 samples after that, should each be (0,2) sequences themselves. Refer to Christensen et al. for more information.</sub>
 
 ## (Do not use) Cranley-Patterson Rotations
 

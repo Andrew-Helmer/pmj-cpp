@@ -8,11 +8,19 @@ Two-Dimensional Elementary Intervals (2019) by Matt Pharr](http://jcgt.org/publi
 
 Much thanks to Per and Matt for their help and encouragement with this implementation.
 
-These sample sequences are really great for certain types of Monte Carlo integration problems, especially for use in computer graphics rendering. They're currently used in Pixar's Renderman. Here's one such sequence, with a subdividing grid to illustrate the most basic progressive stratification.
+These sample sequences are really great for certain types of Monte Carlo integration problems, especially for use in computer graphics rendering. Here's one such sequence, with a subdividing grid to illustrate the most basic progressive stratification.
 
 <p align="center">
 <img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/pmj02bn.gif'>
 </p>
+
+## Using the Sample Sequences for Rendering
+
+See the [Sample Usage Documentation](docs/sample_usage.md). Also provided are some precomputed sample sequences in the [sample_sequences directory](/sample_sequences), so you don't even need to run any of this code.
+
+## Using the Code (Building and Generating Your Own Samples)
+
+See the [Code Usage Documentation](docs/code_usage.md).
 
 ## Sequence Properties and Convergence
 
@@ -30,7 +38,7 @@ This yields extremely good convergence on test integrals, especially at powers o
 
 It's also very easy to shuffle the ordering of points in a PMJ(0,2) sequence to generate another PMJ(0,2) sequence. Check out [the section on shuffling](docs/sample_usage.md#Shuffling).
 
-The Progressive Multi-Jittering with Blue Noise sequence, or pmjbn, doesn't have as good convergence as pmj02, but it does have very nice blue noise properties, while still having better convergence than best-candidate sampling. This animation shows how the samples are (mostly) distributed far away from each other at any given number of samples.
+The Progressive Multi-Jittered Sequence with Blue Noise, or pmjbn, doesn't have as good convergence as pmj02, but it does have very nice blue noise properties, while still having better convergence than best-candidate sampling. This animation shows how the samples are (mostly) distributed far away from each other at any given number of samples.
 
 <p align="center">
 <img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/pmjbn.gif'>
@@ -39,11 +47,3 @@ The Progressive Multi-Jittering with Blue Noise sequence, or pmjbn, doesn't have
 ## Licensing
 
 See the [LICENSE](/LICENSE).
-
-## Using the Sample Sequences
-
-See the [Sample Usage Documentation](docs/sample_usage.md).
-
-## Using the Code
-
-See the [Code Usage Documentation](docs/code_usage.md).

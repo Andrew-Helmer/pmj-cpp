@@ -2,9 +2,9 @@
 
 There are three sample sequences that are useful for rendering.
 
-* pmj02, also known as Progressive Multi-Jittered Sequences (0,2). This sequence has extremely good convergence properties - for a given number of samples, it will typically have the lowest error. 
-* pmjbn, also known as Progressive Multi-Jittered Sequences with Blue Noise (or best candidate sampling). This has the best "blue noise" characteristics, which creates noise that looks very pleasing to the human eye. This might be useful for camera rays in a path-tracer, for example, especially if you're not using it in tandem with any denoising. The error convergence is not as good as pmj02, but it's still much better than uniform random sampling or best-candidate sampling.
-* pmj02bn, also known as Progressive Multi-Jittered Sequences (0,2) with Blue Noise. These sequences don't have as good blue-noise properties as pmjbn, but effectively maintain the error convergence of pmj02 with better blue noise.
+* ***pmj02***, also known as Progressive Multi-Jittered Sequences (0,2). This sequence has extremely good convergence properties - for a given number of samples, it will typically have the lowest error. 
+* ***pmjbn***, also known as Progressive Multi-Jittered Sequences with Blue Noise (or best candidate sampling). This has the best "blue noise" characteristics, which creates noise that looks very pleasing to the human eye. This might be useful for camera rays in a path-tracer, for example, especially if you're not using it in tandem with any denoising. The error convergence is not as good as pmj02, but it's still much better than uniform random sampling or best-candidate sampling.
+* ***pmj02bn***, also known as Progressive Multi-Jittered Sequences (0,2) with Blue Noise. These sequences don't have as good blue-noise properties as pmjbn, but effectively maintain the error convergence of pmj02 with better blue noise.
 
 I've also implemented the basic Progressive Jittered samples, but that's mostly for educational purposes.
 

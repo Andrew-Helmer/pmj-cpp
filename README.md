@@ -8,7 +8,9 @@ Two-Dimensional Elementary Intervals (2019) by Matt Pharr](http://jcgt.org/publi
 
 These sample sequences are really great for certain types of Monte Carlo integration problems, especially for use in computer graphics rendering. Here's one such sequence.
 
-![](docs/pmj02bn.gif)
+<p align="center">
+<img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/pmj02bn.gif'>
+</p>
 
 In addition to providing the code to generate these sample sequences, this repository also contains a number of the precomputed sequences that you could use directly in your own renderer, if you wish to skip the sample generation process. See the Sample Usage section for a little guidance on how to use them in your own renderer.
 

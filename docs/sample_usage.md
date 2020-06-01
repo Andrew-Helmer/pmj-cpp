@@ -26,7 +26,7 @@ This property is fantastic for a renderer, because you can compute a hash from t
 
 If you shuffle a sequence with blue-noise characteristics, you'll likely lose those blue noise characteristics.
 
-<sub>\* "Balanced" here refers to the property of sub-sequence stratification. When generating the PMJ(0,2) samples, after generating N samples, where N is an odd power of two, the next N/2 samples and the N/2 samples following that should each be stratified in the (0,2) intervals. Refer to Christensen et al. for more information.*</sub>
+<sub>\* "Balanced" here refers to the property of sub-sequence stratification. When generating the PMJ(0,2) samples, after generating N samples, where N is an odd power of two, the next N/2 samples, and the N/2 samples after that, should each be stratified in the (0,2) intervals. Refer to Christensen et al. for more information.</sub>
 
 ## (Do not use) Cranley-Patterson Rotations
 

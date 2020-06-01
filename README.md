@@ -11,7 +11,8 @@ Much thanks to Per Christensen and Matt Pharr for help and encouragement with th
 These sample sequences are really great for certain types of Monte Carlo integration problems, especially for use in computer graphics rendering. Here's one such sequence, with a subdividing grid to illustrate the most basic progressive stratification.
 
 <p align="center">
-<img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/pmj02bn.gif'>
+  <img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/pmj02bn.gif'>
+  <sup><a href="https://colab.research.google.com/drive/10Tm6sKo0CGhhQfjHnG7b3tVyNFRlA1HZ?usp=sharing">Animation generated with this Colab notebook.</a></sup>
 </p>
 
 ## Using the Sample Sequences for Rendering

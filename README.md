@@ -1,4 +1,4 @@
-# Progressive Multi-Jittered Sample Sequences in C++
+# Progressive Multi-Jittered Sample Sequences
 
 This is a C++ implementation of Progressive Multi-Jittered Sample Sequences (in 2D), based off two papers:
 

@@ -18,15 +18,13 @@ You can also generate your own sequences, using the generate_samples utility. Se
 
 ## Shuffling
 
-It's easy to shuffle a balanced\* PMJ(0,2) sequence and still have it be a balanced PMJ(0,2) sequence, maintaining the good convergence. For a PMJ(0,2) sequence of N samples, where N is a power of two:
+It's easy to shuffle a balanced\* PMJ(0,2) sequence and still have it be a balanced (0,2) sequence, maintaining the good convergence. For a PMJ(0,2) sequence of N samples, where N is a power of two:
 1. Generate a random integer <code>r</code> in the range [0, N)
 2. To get the <code>i</code>'th sample in a shuffled sequence, get the <code>(i^r)</code>'th sample from the original sequence, where <code>^</code> is the bit-wise xor operator.
 
-This property is useful for a renderer, because you can compute a hash from the pixel coordinates and ray-bounce, and use that to index into your table, which will help to decorrelate precomputed sample tables. You *might* even be able to get away with a single very large table for your entire renderer! Or maybe this would still cause some less-than-ideal correlations. I don't know if anyone's tried it.
+This property is useful for a renderer, because you can compute a hash from the pixel coordinates and ray-bounce, and use that to index into your table, which will help to decorrelate precomputed sample tables. However if you shuffle a sequence with progressive blue-noise characteristics, you'll likely lose the progressive blue noise characteristics.
 
 According to Christensen et al., in Renderman they store hundreds of 4096-sample tables and index into them.
-
-Note that if you shuffle a sequence with blue-noise characteristics, you'll likely lose those blue noise characteristics.
 
 <sub>\* "Balanced" here refers to the property of sub-sequence stratification. When generating the PMJ(0,2) samples, after generating N samples, where N is an odd power of two, the next N/2 samples, and the N/2 samples after that, should each be stratified in the (0,2) intervals. Refer to Christensen et al. for more information.</sub>
 

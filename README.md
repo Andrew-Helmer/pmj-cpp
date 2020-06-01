@@ -8,13 +8,13 @@ Two-Dimensional Elementary Intervals (2019) by Matt Pharr](http://jcgt.org/publi
 
 Much thanks to Per and Matt for their help and encouragement with this implementation.
 
-These sample sequences are really great for certain types of Monte Carlo integration problems, especially for use in computer graphics rendering. They're currently used in Pixar's Renderman. Here's one such sequence.
+These sample sequences are really great for certain types of Monte Carlo integration problems, especially for use in computer graphics rendering. They're currently used in Pixar's Renderman. Here's one such sequence, with a subdividing grid to illustrate the most basic progressive stratification.
 
 <p align="center">
 <img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/pmj02bn.gif'>
 </p>
 
-## Sequence Properties and Error Convergence
+## Sequence Properties and Convergence
 
 The PMJ(0,2) or pmj02 sample sequence has the property that any prefix of the samples are stratified on every elementary (0,2) interval.
 
@@ -29,6 +29,12 @@ This yields extremely good convergence on test integrals, especially at powers o
 </p>
 
 It's also *very* easy to shuffle the points in a PMJ(0,2) sequence to generate another PMJ(0,2) sequence. Check out the section on Shuffling within "Using the Samples in Rendering".
+
+The Progressive Multi-Jittering with Blue Noise sequence, or pmjbn, doesn't have as good convergence as pmj02, but it does have very nice blue noise properties, while still having much better convergence than best-candidate sampling. This animation shows how the samples are (mostly) distributed far away from each other at any given number of samples.
+
+<p align="center">
+<img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/pmjbn.gif'>
+</p>
 
 ## License and Attribution
 

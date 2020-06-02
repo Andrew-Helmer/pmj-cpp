@@ -27,12 +27,12 @@ This property may be useful to a renderer, because you can compute a hash from t
 According to Christensen et al., in Renderman they store hundreds of 4096-sample tables and index into one of the tables based on a hash of pixel coordinates and bounce.
 
 It's possible to do a somewhat better shuffle, more decorrelated, and it's fast, but it's not so memory-efficient. I think you would need to store the whole list of indices. The procedure is:
-1. Iterate over sequential pairs in the sequence. For every pair, randomly decide whether to swap it. E.g. randomly swap indices 0 and 1, randomly swap 2 and 3, randomly swap 4 and 5, etc.
+1. Iterate over sequential pairs in the sequence. For every pair, randomly decide whether to swap it. E.g. randomly swap index 0 with index 1, randomly swap 2 with 3, randomly swap 4 with 5, etc.
 2. Iterate over sequential pairs of two values. For every pair, randomly decide whether to swap *both* values. E.g. randomly swap indices 0,1 with 2,3. Randomly swap 4,5 with 6,7. Etc.
 3. Iterate over sequential pairs of 4 values, and randomly swap the 4 values at a time. For instance, randomly swap 0,1,2,3 with 4,5,6,7. 
 4. Continue multiplying each length by two, until you've randomly swapped the first half of the entire sequence with the second half.
 
-Both of these methods work because in balanced PMJ(0,2) sequences, any sequence that's a power of two long, and starts at an integer multiple of its length, is itself a balanced progressive (0,2) sequence. So samples 1-4 (indices 0-3) are an (0,2) sequence, as are samples 5-8, 9-13, etc. Samples 1-16 are an (0,2) sequence, as are 17-32.
+Both of these methods work because in a balanced PMJ(0,2) sequences, any sub-sequence that's a power of two long, and starts at an integer multiple of its length, is itself a balanced progressive (0,2) sequence. So samples 1-4 (indices 0-3) are an (0,2) sequence, as are samples 5-8, 9-13, etc. Samples 1-16 are an (0,2) sequence, as are 17-32, 33-48, etc.
 
 <sub>\* "Balanced" here refers to the property of sub-sequence stratification. When generating the PMJ(0,2) samples, after generating N samples, where N is an odd power of two, the next N/2 samples, and the N/2 samples after that, should each be (0,2) sequences themselves. Refer to Christensen et al. for more information.</sub>
 

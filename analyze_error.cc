@@ -48,8 +48,7 @@ using std::string;
  * https://graphics.pixar.com/library/ProgressiveMultiJitteredSampling/pmj_slides.pdf
  */
 double disc_distr(const pmj::Point& point) {
-  constexpr double radius = 2.0 / 3.14159265;
-  constexpr double radius_sq = radius * radius;
+  constexpr double radius_sq = 2.0 / 3.14159265;
   if (point.x*point.x + point.y*point.y <= radius_sq) return 1.0;
   else
     return 0.0;

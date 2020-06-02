@@ -17,7 +17,6 @@
 #include "sample_generation/pj.h"
 #include "sample_generation/pmj.h"
 #include "sample_generation/pmj02.h"
-#include "sample_generation/pmj02bn.h"
 
 namespace pmj {
 
@@ -162,10 +161,6 @@ Point GetBestCandidateOfSamples(const std::vector<Point>& candidates,
     }
   }
 
-  if (max_min_dist_sq_out != nullptr) {
-    *max_min_dist_sq_out = max_min_dist_sq;
-  }
-
   return best_candidate;
 }
 
@@ -177,7 +172,6 @@ sample_fn GetSamplingFunction(const std::string& algorithm) {
     {"pmjbn", &GetProgMultiJitteredSamplesWithBlueNoise},
     {"pmj02", &GetPMJ02Samples},
     {"pmj02bn", &GetPMJ02SamplesWithBlueNoise},
-    {"pmj02bn-2", &GetPMJ02SamplesWithBlueNoiseAttempts},
     /* Experimental/Explicit Algorithms */
     {"pmj-random", &GetProgMultiJitteredSamplesRandom},
     {"pmj-oxplowing", &GetProgMultiJitteredSamplesOxPlowing},

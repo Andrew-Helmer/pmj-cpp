@@ -22,11 +22,11 @@ It's easy to shuffle a balanced\* PMJ(0,2) sequence and still have it be a balan
 1. Generate a random integer <code>r</code> in the range [0, N)
 2. To get the <code>i</code>'th sample in a shuffled sequence, get the <code>(i^r)</code>'th sample from the original sequence, where <code>^</code> is the bit-wise xor operator.
 
-This property may be useful to a renderer, because you can compute a hash from the pixel coordinates and ray-bounce, and use that to index into your table, which may help to decorrelate precomputed sample tables. However if you shuffle a sequence with progressive blue-noise characteristics, you'll likely lose the progressive blue noise characteristics.
+This property may be useful to a renderer, because you can compute a hash from the pixel coordinates and ray-bounce, and use that to index into your sequence, which may help to decorrelate precomputed sequences. However, if you shuffle a sequence with progressive blue-noise characteristics, you'll likely lose the progressive blue noise characteristics.
 
-According to Christensen et al., in Renderman they store hundreds of 4096-sample tables and index into them.
+According to Christensen et al., in Renderman they store hundreds of 4096-sample tables and index into one of the tables based on a hash of pixel coordinates and bounce.
 
-It's possible to do a somewhat better shuffle, more decorrelated, and it's fast, but it's not memory-efficient. I think you would probably need to store the whole list of indices. The procedure is:
+It's possible to do a somewhat better shuffle, more decorrelated, and it's fast, but it's not so memory-efficient. I think you would need to store the whole list of indices. The procedure is:
 1. Divide the sample set into sequential pairs. For every pair, randomly decide whether to swap it. E.g. randomly swap indices 0 and 1, randomly swap 2 and 3, randomly swap 4 and 5, etc.
 2. Divide the sample set into sequential pairs of pairs. For every pair, randomly decide whether to swap *both* values. E.g. randomly swap indices 0,1 with 2,3. Randomly swap 4,5 with 6,7. Etc.
 3. Divide the sample set into sequential pairs of 4 values, and randomly swap the 4 values at a time. For instance, randomly swap 0,1,2,3 with 4,5,6,7. 

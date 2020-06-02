@@ -82,7 +82,7 @@ double GetNearestNeighborDistSq(const Point& sample,
   const int x_pos = sample.x * dim;
   const int y_pos = sample.y * dim;
 
-  double min_dist_sq = sqrt(2.0);
+  double min_dist_sq = 2.0;
   const double grid_size = 1.0 / dim;
   for (int i = 1; i <= dim; i++) {
     // We add sqrt(0.5) to account for the fact that the point might not be

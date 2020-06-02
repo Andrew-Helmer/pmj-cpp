@@ -31,8 +31,7 @@ int UniformInt(int min, int max);
 // is the furthest from all existing points.
 Point GetBestCandidateOfSamples(const std::vector<Point>& candidates,
                                 const Point* sample_grid[],
-                                const int dim,
-                                double* max_min_dist_sq = nullptr);
+                                const int dim);
 
 // Given a string like "pmj" or "pmj02bn", returns the function to generate
 // samples from that algorithm.

@@ -142,8 +142,7 @@ double GetNearestNeighborDistSq(const Point& sample,
 
 Point GetBestCandidateOfSamples(const std::vector<Point>& candidates,
                                 const Point* sample_grid[],
-                                const int dim,
-                                double* max_min_dist_sq_out) {
+                                const int dim) {
   // Hypothetically, it could be faster to search all the points in parallel,
   // culling points as we go, but a naive implementation of this was only a tiny
   // bit faster, and the code was uglier, so we'll leave it for now.

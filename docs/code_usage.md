@@ -14,7 +14,7 @@ You can also use [Bazel](https://bazel.build/).
 
 <pre><code>bazel run -c opt generate_samples -- --n=4096 --algorithm=pmj02 > pmj02_samples.txt</code></pre>
 
-Useful options for the algorithm flag are "pmjbn", "pmj02", and "pmj02bn". See the [sample usage documentation](docs/sample_usage.md) for the differences.
+Useful options for the algorithm flag are "pmjbn", "pmj02", and "pmj02bn". See the [sample usage documentation](/docs/sample_usage.md) for the differences.
 
 ## Building
 
@@ -44,6 +44,6 @@ If you want to evaluate the error of different sampling algorithms, you can do s
 
 <pre><code>bazel run -c opt analyze_error -- --algorithms=uniform,pj,pmj,pmj02 --pyfile=$PWD/analyses/test.p</code></pre>
 
-This will output a python file that can be read, used to generate graphs of error convergence. [Here's an example Colab notebook](https://github.com/Andrew-Helmer/pmj-cpp/blob/master/analyses/PMJ(0%2C2)_Error_Analysis.ipynb) using the error_analysis.py file. If you don't supply the --pyfile flag, you can just get the final error for a given number of samples (averaged over many runs):
+This will output a python file that can be read, used to generate graphs of error convergence. [Here's an example Colab notebook](/analyses/PMJ(0%2C2)_Error_Analysis.ipynb) using the error_analysis.py file. If you don't supply the --pyfile flag, you can just get the final error for a given number of samples (averaged over many runs):
 
 <pre><code>bazel run -c opt analyze_error -- --max_n=256 --runs=1024</code></pre>

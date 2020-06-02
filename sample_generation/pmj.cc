@@ -36,8 +36,7 @@ class SampleSet {
  public:
   explicit SampleSet(const int num_samples,
                      const int num_candidates)
-                     : num_samples(num_samples),
-                       num_candidates_(num_candidates) {
+                     : num_candidates_(num_candidates) {
     samples_ = std::make_unique<Point[]>(num_samples);
 
     int grid_memory_size = 1;
@@ -70,8 +69,6 @@ class SampleSet {
     return samples_.get();
   }
   const int dim() const { return dim_; }
-
-  const int num_samples;
 
  private:
   // Generates a valid sample at the given cell position, subject to

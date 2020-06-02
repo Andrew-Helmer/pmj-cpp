@@ -48,4 +48,4 @@ The Progressive Multi-Jittered Sequence with Blue Noise, or pmjbn, doesn't have 
 
 ## Licensing
 
-See the [LICENSE](/LICENSE).
+Licensed under the MIT Open Source license. See the [LICENSE](/LICENSE) file.

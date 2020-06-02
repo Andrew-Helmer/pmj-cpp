@@ -18,11 +18,11 @@ Useful options for the algorithm flag are "pmjbn", "pmj02", and "pmj02bn". See t
 
 ## Building
 
-If you want to use this code simply to generate your own samples, see the section "Generating your own samples". You can build the sample generation using a simple "make release" command. The "release" isn't necessary, but it does significantly speed up sample generation.
+If you want to use this code simply to generate your own samples, see the section "Generating your own samples". You can build the sample generation using a simple <code>make release</code> command. The "release" isn't necessary, but it does significantly speed up sample generation.
 
 If you want to run the performance testing or error analysis code, you will need to install the [Bazel build tool](https://bazel.build/).
 
-Note that this C++ code uses one C++14 feature as of now: std::make_unique. If you want to build this with C++11, you could change the few calls to that.
+Note that this C++ code uses one **C++14** feature as of now: std::make_unique. If you want to build this with C++11, you could change the few calls to that.
 
 ## Code Performance
 
@@ -37,3 +37,13 @@ Most likely, you'll want to use precomputed tables of these samples for optimal 
 If you want to evaluate the performance of the different algorithms, you can do so with the [test_performance](/test_performance.cc) tool. You'll need to use Bazel for this.
 
 <pre><code>bazel run -c opt test_performance -- --n=65536 --runs=64 --algorithms=pj,pmj,pmj02</code></pre>
+
+## Error Analysis
+
+If you want to evaluate the error of different sampling algorithms, you can do so with the [analyze_error](/analyze_error.cc) tool. You'll need to use Bazel for this. This will output a python file which can be read to generate nice graphs of error convergence. [Here's an example Colab notebook](https://colab.research.google.com/drive/1LPlk7rm_0v20UDsCG6ZL_NuhSj7ymA-h?usp=sharing).
+
+<pre><code>bazel run -c opt analyze_error -- --algorithms=uniform,pj,pmj,pmj02 --pyfile=$PWD/analyses/test.p</code></pre>
+
+If you don't supply the --pyfile flag, you can just get the final error for a given number of samples (averaged over many runs):
+
+<pre><code>bazel run -c opt analyze_error -- --max_n=256 --runs=1024</code></pre>

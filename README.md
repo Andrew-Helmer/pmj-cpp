@@ -2,11 +2,11 @@
 
 This is a C++ implementation of Progressive Multi-Jittered Sample Sequences (in 2D), based off two papers:
 
-* [Progressive Multi-Jittered Sample Sequences (2018) by Christensen, Kensler, and Kilpatrick](https://graphics.pixar.com/library/ProgressiveMultiJitteredSampling/paper.pdf)
+* [Progressive Multi-Jittered Sample Sequences (2018)](https://graphics.pixar.com/library/ProgressiveMultiJitteredSampling/paper.pdf) by Christensen, Kensler, and Kilpatrick
 * [Efficient Generation of Points that Satisfy
-Two-Dimensional Elementary Intervals (2019) by Matt Pharr](http://jcgt.org/published/0008/01/04/)
+Two-Dimensional Elementary Intervals (2019)](http://jcgt.org/published/0008/01/04/) by Matt Pharr
 
-Much thanks to Per Christensen and Matt Pharr for help and encouragement with this implementation. For a Rust implementation, see [Simon Brown's repository](https://github.com/sjb3d/pmj). Simon had a key insight to get optimal integration performance, something that I never would've figured out myself.
+Much thanks to Per Christensen and Matt Pharr for help and encouragement with this implementation. For a Rust implementation, see [Simon Brown's repository](https://github.com/sjb3d/pmj). Simon had a key insight on how to optimally pick subquadrants during sample generation.
 
 These sample sequences are really great for certain types of Monte Carlo integration problems, especially for use in computer graphics rendering. Here's one such sequence, with a subdividing grid to illustrate the most basic progressive stratification.
 

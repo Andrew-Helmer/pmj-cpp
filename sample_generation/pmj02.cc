@@ -42,8 +42,7 @@ class SampleSet {
  public:
   explicit SampleSet(const int num_samples,
                      const int num_candidates)
-                     : num_samples(num_samples),
-                       num_candidates_(num_candidates) {
+                     : num_candidates_(num_candidates) {
     samples_ = std::make_unique<Point[]>(num_samples);
     std::fill_n(samples_.get(), num_samples, Point({0.0, 0.0}));
 
@@ -80,8 +79,6 @@ class SampleSet {
   }
   const int dim() const { return dim_; }
 
-  const int num_samples;
-
  private:
   // Adds a new point at index i. Updates the necessary data structures.
   void AddSample(const int i, const Point& sample);
@@ -112,7 +109,7 @@ class SampleSet {
 };
 
 void SampleSet::SubdivideStrata() {
-  const double old_n = n_;
+  const int old_n = n_;
 
   n_ *= 2;
   is_power_of_4_ = !is_power_of_4_;

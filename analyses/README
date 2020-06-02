@@ -4,4 +4,6 @@ Each python file declares a variable "analysis".
 
 Analysis is a dictionary, where the keys are different distributions (e.g. bilinear, gaussian, disc). The values are dictionaries too, where each key is a sampling method (e.g. uniform, pmj02), and each value is a list of errors, corresponding to the number of samples.
 
-Here is an example Colab notebook which utilizes this: https://colab.research.google.com/drive/1LPlk7rm_0v20UDsCG6ZL_NuhSj7ymA-h?usp=sharing
+Here is an example Colab notebook which utilizes this: https://github.com/Andrew-Helmer/pmj-cpp/blob/master/analyses/PMJ(0%2C2)_Error_Analysis.ipynb
+
+The PMJ Visualizations Colab doesn't work in GitHub, so here's a link directly to Colab: https://colab.research.google.com/github/Andrew-Helmer/pmj-cpp/blob/master/analyses/PMJ_Visualizations.ipynb

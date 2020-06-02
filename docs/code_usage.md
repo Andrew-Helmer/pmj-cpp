@@ -40,10 +40,10 @@ If you want to evaluate the performance of the different algorithms, you can do 
 
 ## Error Analysis
 
-If you want to evaluate the error of different sampling algorithms, you can do so with the [analyze_error](/analyze_error.cc) tool. You'll need to use Bazel for this. This will output a python file which can be read to generate nice graphs of error convergence. [Here's an example Colab notebook](https://colab.research.google.com/drive/1LPlk7rm_0v20UDsCG6ZL_NuhSj7ymA-h?usp=sharing).
+If you want to evaluate the error of different sampling algorithms, you can do so with the [analyze_error](/analyze_error.cc) tool. You'll need to use Bazel for this.
 
 <pre><code>bazel run -c opt analyze_error -- --algorithms=uniform,pj,pmj,pmj02 --pyfile=$PWD/analyses/test.p</code></pre>
 
-If you don't supply the --pyfile flag, you can just get the final error for a given number of samples (averaged over many runs):
+This will output a python file that can be read, used to generate graphs of error convergence. [Here's an example Colab notebook](https://github.com/Andrew-Helmer/pmj-cpp/blob/master/analyses/PMJ(0%2C2)_Error_Analysis.ipynb) using the error_analysis.py file. If you don't supply the --pyfile flag, you can just get the final error for a given number of samples (averaged over many runs):
 
 <pre><code>bazel run -c opt analyze_error -- --max_n=256 --runs=1024</code></pre>

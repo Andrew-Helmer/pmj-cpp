@@ -28,7 +28,7 @@ According to Christensen et al., in Renderman they store hundreds of 4096-sample
 
 It's possible to do a somewhat better shuffle, more decorrelated, and it's fast, but it's not so memory-efficient. I think you would need to store the whole list of indices. The procedure is:
 1. Iterate over sequential pairs in the sequence. For every pair, randomly decide whether to swap it. E.g. randomly swap index 0 with index 1, randomly swap 2 with 3, randomly swap 4 with 5, etc.
-2. Iterate over sequential pairs of two values. For every pair, randomly decide whether to swap *both* values. E.g. randomly swap indices 0,1 with 2,3. Randomly swap 4,5 with 6,7. Etc.
+2. Iterate over sequential pairs of two values. For every pair, randomly decide whether to swap *both* values. E.g. randomly swap indices 0,1 with 2,3. Randomly swap 4,5 with 6,7, etc.
 3. Iterate over sequential pairs of 4 values, and randomly swap the 4 values at a time. For instance, randomly swap 0,1,2,3 with 4,5,6,7. 
 4. Continue multiplying each length by two, until you've randomly swapped the first half of the entire sequence with the second half.
 

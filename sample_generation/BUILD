@@ -52,6 +52,17 @@ cc_library(
 )
 
 cc_library(
+    name = "pmj02bn",
+    srcs = ["pmj02bn.cc"],
+    hdrs = ["pmj02bn.h"],
+    deps = [
+        ":pmj02_util",
+        ":select_subquad",
+        ":util",
+    ]
+)
+
+cc_library(
     name = "pmj02_util",
     srcs = ["pmj02_util.cc"],
     hdrs = ["pmj02_util.h"],
@@ -66,5 +77,6 @@ cc_library(
         "pj",
         "pmj",
         "pmj02",
+        "pmj02bn",
     ]
 )

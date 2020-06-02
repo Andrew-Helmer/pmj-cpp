@@ -17,6 +17,7 @@
 #include "sample_generation/pj.h"
 #include "sample_generation/pmj.h"
 #include "sample_generation/pmj02.h"
+#include "sample_generation/pmj02bn.h"
 
 namespace pmj {
 
@@ -141,7 +142,8 @@ double GetNearestNeighborDistSq(const Point& sample,
 
 Point GetBestCandidateOfSamples(const std::vector<Point>& candidates,
                                 const Point* sample_grid[],
-                                const int dim) {
+                                const int dim,
+                                double* max_min_dist_sq_out) {
   // Hypothetically, it could be faster to search all the points in parallel,
   // culling points as we go, but a naive implementation of this was only a tiny
   // bit faster, and the code was uglier, so we'll leave it for now.
@@ -161,6 +163,10 @@ Point GetBestCandidateOfSamples(const std::vector<Point>& candidates,
     }
   }
 
+  if (max_min_dist_sq_out != nullptr) {
+    *max_min_dist_sq_out = max_min_dist_sq;
+  }
+
   return best_candidate;
 }
 
@@ -172,6 +178,7 @@ sample_fn GetSamplingFunction(const std::string& algorithm) {
     {"pmjbn", &GetProgMultiJitteredSamplesWithBlueNoise},
     {"pmj02", &GetPMJ02Samples},
     {"pmj02bn", &GetPMJ02SamplesWithBlueNoise},
+    {"pmj02bn-2", &GetPMJ02SamplesWithBlueNoiseAttempts},
     /* Experimental/Explicit Algorithms */
     {"pmj-random", &GetProgMultiJitteredSamplesRandom},
     {"pmj-oxplowing", &GetProgMultiJitteredSamplesOxPlowing},

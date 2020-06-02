@@ -37,7 +37,7 @@ This yields extremely good convergence on test integrals, especially at powers o
 
 <p align="center">
   <img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/error_analysis.svg'><br>
-  <sup><a href="https://colab.research.google.com/drive/1LPlk7rm_0v20UDsCG6ZL_NuhSj7ymA-h?usp=sharing">Generated with this Colab notebook</a></sup>
+  <sup><a href="https://github.com/Andrew-Helmer/pmj-cpp/blob/master/analyses/PMJ(0%2C2)_Error_Analysis.ipynb">Generated with this Colab/Jupyter notebook</a></sup>
 </p>
 
 The Progressive Multi-Jittered Sequence with Blue Noise, or pmjbn, doesn't have as good convergence as pmj02, but it does have very nice blue noise properties, while still having better convergence than best-candidate sampling. This animation shows how the samples are (mostly) distributed far away from each other at any given number of samples.

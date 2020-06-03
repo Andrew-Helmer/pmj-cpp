@@ -23,7 +23,7 @@ See the [Sample Usage Documentation](docs/sample_usage.md). Also provided are so
 
 ## Using the Code (Building and Generating Your Own Samples)
 
-In the simplest case, in order to generate a set of samples you can build the generate_samples tool with make.
+To generate a set of samples you can build the generate_samples tool with *make*.
 
 <pre><code>make release</code></pre>
 
@@ -31,7 +31,7 @@ And then run generate_samples, redirecting the output to a file of samples.
 
 <pre><code>./generate_samples --n=4096 --algorithm=pmj02 > pmj02_samples.txt</code></pre>
 
-See the [Code Usage Documentation](docs/code_usage.md) for more information.
+See the [Code Usage Documentation](docs/code_usage.md) for more information on usage.
 
 ## Sequence Properties and Convergence
 

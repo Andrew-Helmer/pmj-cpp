@@ -18,7 +18,7 @@ You can also generate your own sequences, using the generate_samples utility. Se
 
 ## References
 
-You may want to consult the Discussion section (section 11) of [Christensen et al](https://graphics.pixar.com/library/ProgressiveMultiJitteredSampling/paper.pdf)) for some information of how these samples are used in RenderMan.
+You may want to consult the Discussion section (section 11) of [Christensen et al](https://graphics.pixar.com/library/ProgressiveMultiJitteredSampling/paper.pdf) for some information of how these samples are used in RenderMan.
 
 Another good reference might be the [(0,2) Sequence](http://www.pbr-book.org/3ed-2018/Sampling_and_Reconstruction/(0,_2)-Sequence_Sampler.html) section of PBRT.
 
@@ -28,7 +28,7 @@ It's easy to shuffle a balanced\* PMJ(0,2) sequence and still have it be a balan
 1. Generate a random integer <code>r</code> in the range [0, N)
 2. To get the <code>i</code>'th sample in a shuffled sequence, get the <code>(i^r)</code>'th sample from the original sequence, where <code>^</code> is the bit-wise xor operator.
 
-This property may be useful to a renderer, because you can compute a hash from the pixel coordinates and ray-bounce, and use that to index into your sequence, which may help to decorrelate precomputed sequences. However, if you shuffle a sequence with progressive blue-noise characteristics, you'll likely lose the progressive blue noise characteristics.
+This property may be useful to a renderer, because you can compute a hash from the pixel coordinates and ray-bounce, and use that to index into your sequence, which may help to decorrelate precomputed sequences. However, if you shuffle a sequence with progressive blue-noise characteristics, you'll likely lose the progressive blue-noise characteristics.
 
 According to Christensen et al., in Renderman they store hundreds of 4096-sample tables and index into one of the tables based on a hash of pixel coordinates and bounce.
 

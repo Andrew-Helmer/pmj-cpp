@@ -20,9 +20,9 @@ void GetXStrata(const int x_pos,
                 const int strata_index,
                 const vector<vector<bool>>& strata,
                 vector<int>* x_strata) {
-  const int strata_x_dim = 1 << (strata.size() - strata_index - 1);
+  const int strata_n_cols = 1 << (strata.size() - strata_index - 1);
   const bool is_occupied =
-      strata[strata_index][y_pos*strata_x_dim + x_pos];
+      strata[strata_index][y_pos*strata_n_cols + x_pos];
 
   if (!is_occupied) {
     if (strata_index == 0) {
@@ -39,12 +39,12 @@ void GetYStrata(const int x_pos,
                 const int strata_index,
                 const vector<vector<bool>>& strata,
                 vector<int>* y_strata) {
-  const int strata_x_dim = 1 << (strata.size() - strata_index - 1);
+  const int strata_n_cols = 1 << (strata.size() - strata_index - 1);
   const bool is_occupied =
-      strata[strata_index][y_pos*strata_x_dim + x_pos];
+      strata[strata_index][y_pos*strata_n_cols + x_pos];
 
   if (!is_occupied) {
-    if (strata_x_dim == 1) {
+    if (strata_n_cols == 1) {
       // We're at the 1xN leaf.
       y_strata->push_back(y_pos);
     } else {

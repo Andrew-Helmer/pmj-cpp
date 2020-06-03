@@ -96,32 +96,27 @@ std::vector<std::pair<int, int>> GetSubQuadrantsOxPlowing(
     for (int col = 0; col < quad_dim; col++) {
       up = !up;
       for (int i = 0; i < quad_dim; i++) {
-        int row = up ? i : quad_dim - i - 1;
-        bool last = (i == quad_dim - 1);
+        const int row = up ? i : quad_dim - i - 1;
 
-        int quadrant_index = row*quad_dim + col;
+        const int quadrant_index = row*quad_dim + col;
         int x_pos = first_cells[2*quadrant_index];
         int y_pos = first_cells[2*quadrant_index+1];
 
-        int balance_y = choice_balance_y[row];
-        int balance_x = choice_balance_x[col];
+        const bool last = (i == quad_dim - 1);
+        const int balance_y = choice_balance_y[row];
+        const int balance_x = choice_balance_x[col];
 
         bool swap_x = false;
-        bool swap_y = false;
-
         if (balance_y != 0 && !last) {
-          swap_y = (balance_y > 0) == (y_pos & 1);
-          swap_x = !swap_y;
+          swap_x = (balance_y > 0) != (y_pos & 1);
         } else if (balance_x != 0) {
           swap_x = (balance_x > 0) == (x_pos & 1);
-          swap_y = !swap_x;
         } else {
           swap_x = UniformRand() < 0.5;
-          swap_y = !swap_x;
         }
 
         x_pos = swap_x ? x_pos ^ 1 : x_pos;
-        y_pos = swap_y ? y_pos ^ 1 : y_pos;
+        y_pos = (!swap_x) ? y_pos ^ 1 : y_pos;
 
         choices[quadrant_order[quadrant_index]].first = x_pos;
         choices[quadrant_order[quadrant_index]].second = y_pos;

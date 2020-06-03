@@ -55,9 +55,9 @@ class SampleSet {
 
   void GenerateFirstSample();
 
-  // This generates a new sample at the current index, given the X position
-  // and Y position of the subquadrant. It won't generate a new sample in an
-  // existing strata.
+  // This generates a new sample at the given index, given the X position and Y
+  // position of the subquadrant. It won't generate a new sample in an existing
+  // strata.
   void GenerateNewSample(const int sample_index,
                          const int x_pos,
                          const int y_pos);
@@ -84,11 +84,9 @@ class SampleSet {
   void AddSample(const int i, const Point& sample);
 
   // Given a sample, sets all the correct strata to true.
-  void UpdateStrata(const Point& sample);
+  void UpdateStrata(const int sample_index);
 
-  Point GetCandidateSample(const int x_pos,
-                           const int y_pos,
-                           const vector<int>& valid_x_strata,
+  Point GetCandidateSample(const vector<int>& valid_x_strata,
                            const vector<int>& valid_y_strata) const;
 
   std::unique_ptr<Point[]> samples_;
@@ -125,20 +123,13 @@ void SampleSet::SubdivideStrata() {
   std::fill(strata_.begin(), strata_.end(), vector<bool>(n_, false));
   std::fill_n(sample_grid_.get(), n_, nullptr);
   for (int i = 0; i < old_n; i++) {
-    const auto& sample = samples_[i];
-
-    UpdateStrata(sample);
-
-    const int x_pos = sample.x * dim_, y_pos = sample.y * dim_;
-    sample_grid_[y_pos*dim_ + x_pos] = &sample;
+    UpdateStrata(i);
   }
 }
 
 // This generates a sample within the grid position, verifying that it doesn't
 // overlap strata with any other sample.
-Point SampleSet::GetCandidateSample(const int x_pos,
-                                    const int y_pos,
-                                    const vector<int>& valid_x_strata,
+Point SampleSet::GetCandidateSample(const vector<int>& valid_x_strata,
                                     const vector<int>& valid_y_strata) const {
   Point sample;
 
@@ -170,13 +161,13 @@ void SampleSet::GenerateNewSample(const int sample_index,
       GetValidStrata(x_pos, y_pos, strata_);
 
   if (num_candidates_ <= 1) {
-    best_candidate = GetCandidateSample(
-        x_pos, y_pos, valid_strata.first, valid_strata.second);
+    best_candidate =
+        GetCandidateSample(valid_strata.first, valid_strata.second);
   } else {
     vector<Point> candidate_samples(num_candidates_);
     for (int i = 0; i < num_candidates_; i++) {
-      candidate_samples[i] = GetCandidateSample(
-          x_pos, y_pos, valid_strata.first, valid_strata.second);
+      candidate_samples[i] =
+          GetCandidateSample(valid_strata.first, valid_strata.second);
     }
 
     best_candidate = GetBestCandidateOfSamples(
@@ -185,26 +176,25 @@ void SampleSet::GenerateNewSample(const int sample_index,
   AddSample(sample_index, best_candidate);
 }
 
-void SampleSet::UpdateStrata(const Point& sample) {
-  vector<vector<bool>>* strata = &strata_;
+void SampleSet::UpdateStrata(const int sample_index) {
+  const Point& sample = samples_[sample_index];
 
-  for (int i = 0, x_width = n_, y_width = 1;
-       x_width >= 1;
-       x_width /= 2, y_width *= 2, i++) {
-    int x_pos = sample.x * x_width;
-    int y_pos = sample.y * y_width;
-    (*strata)[i][y_pos*x_width + x_pos] = true;
+  for (int i = 0, strata_n_cols = n_, strata_n_rows = 1;
+       strata_n_cols >= 1;
+       strata_n_cols /= 2, strata_n_rows *= 2, i++) {
+    int x_pos = sample.x * strata_n_cols;
+    int y_pos = sample.y * strata_n_rows;
+    strata_[i][y_pos*strata_n_cols + x_pos] = true;
   }
+
+  const int x_pos = sample.x * dim_, y_pos = sample.y * dim_;
+  sample_grid_[y_pos*dim_ + x_pos] = &sample;
 }
 
 void SampleSet::AddSample(const int i,
                           const Point& sample) {
   samples_[i] = sample;
-
-  UpdateStrata(sample);
-
-  const int x_pos = sample.x * dim_, y_pos = sample.y * dim_;
-  sample_grid_[y_pos*dim_ + x_pos] = &(samples_[i]);
+  UpdateStrata(i);
 }
 
 /*
@@ -221,6 +211,8 @@ std::unique_ptr<Point[]> GenerateSamples(
   // Number of samples from the previous iteration. Always a power of 4.
   int n = 1;
   while (n < num_samples) {
+    // Subdivide the strata. On the first call, this takes the strata from 1x1
+    // to 2x1 and 1x2.
     sample_set.SubdivideStrata();
 
     // For every sample, we first generate the diagonally opposite one at the
@@ -232,24 +224,29 @@ std::unique_ptr<Point[]> GenerateSamples(
       int x_pos = sample.x * sample_set.dim();
       int y_pos = sample.y * sample_set.dim();
 
-      sample_set.GenerateNewSample(n+i, x_pos ^ 1, y_pos ^ 1);
+      sample_set.GenerateNewSample(/*sample_index=*/n+i, x_pos ^ 1, y_pos ^ 1);
     }
 
-    // Subdivide the strata, for instance strata of 4x1, 2x2, 1x4 will become
-    // 8x1, 4x2, 2x4, 1x8.
+    // Subdivide the strata, for instance strata of 2x1 and 1x2 will become
+    // strata of 4x1, 2x2, and 1x4.
     sample_set.SubdivideStrata();
 
+    // For the remaining subquadrants, we need to pick what order to sample from
+    // them. This will get us the set of subquadrants for the next n samples.
     auto sub_quad_choices =
         (*subquad_func)(sample_set.samples(), sample_set.dim());
     for (int i = 0; i < n && 2*n+i < num_samples; i++) {
-      sample_set.GenerateNewSample(
-          2*n+i, sub_quad_choices[i].first, sub_quad_choices[i].second);
+      sample_set.GenerateNewSample(/*sample_index=*/2*n+i,
+                                   sub_quad_choices[i].first,
+                                   sub_quad_choices[i].second);
     }
 
+    // Finally we sample from the subquadrants diagonally opposite to the ones
+    // we just did.
     for (int i = 0; i < n && 3*n+i < num_samples; i++) {
-      // Get the one diagonally opposite to the one we just got.
-      sample_set.GenerateNewSample(
-          3*n+i, sub_quad_choices[i].first ^ 1, sub_quad_choices[i].second ^ 1);
+      sample_set.GenerateNewSample(/*sample_index=*/3*n+i,
+                                   sub_quad_choices[i].first ^ 1,
+                                   sub_quad_choices[i].second ^ 1);
     }
 
     n *= 4;

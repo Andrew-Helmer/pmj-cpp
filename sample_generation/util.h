@@ -44,6 +44,12 @@ sample_fn GetSamplingFunction(const std::string& algorithm);
 std::vector<const Point*> ShufflePMJ02Sequence(const pmj::Point points[],
                                                const int n);
 
+// This performs a shuffle similar to the one above, but it's easier and doesn't
+// require storing the shuffle, only a single random int. It doesn't shuffle
+// quite as well though.
+std::vector<const Point*> ShufflePMJ02SequenceXor(const pmj::Point points[],
+                                                  const int n);
+
 // Just for comparison with performance testing and error analysis.
 std::unique_ptr<Point[]> GetUniformRandomSamples(
     const int num_samples);

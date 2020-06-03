@@ -82,11 +82,13 @@ double GetNearestNeighborDistSq(const Point& sample,
   const int x_pos = sample.x * dim;
   const int y_pos = sample.y * dim;
 
+  // The minimum distance we've found between points, so far. 2.0 is the highest
+  // possible value in the [0, 1) interval in 2 dimensions.
   double min_dist_sq = 2.0;
   const double grid_size = 1.0 / dim;
-  for (int i = 1; i <= dim; i++) {
-    // We add sqrt(0.5) to account for the fact that the point might not be
-    // in the center of its own square.
+  for (int i = 1; i <= dim/2; i++) {
+    // sqrt(0.5) is the furthest a point can be from the center of its square,
+    // so we add that.
     double grid_radius = grid_size * (i + 0.7072);
     double grid_radius_sq = grid_radius * grid_radius;
 
@@ -104,9 +106,6 @@ double GetNearestNeighborDistSq(const Point& sample,
       const Point* bottom_pt =
           sample_grid[wrapped_y_min*dim + wrapped_x_offset];
       if (top_pt != nullptr) {
-        min_dist_sq = std::min(min_dist_sq,
-                               GetToroidalDistSq(top_pt->x, top_pt->y,
-                                           sample.x, sample.y));
         UpdateMinDistSq(sample, *top_pt, &min_dist_sq);
       }
       if (bottom_pt != nullptr) {
@@ -115,9 +114,9 @@ double GetNearestNeighborDistSq(const Point& sample,
     }
     // Traverse left and right sides, excluding corners (hence the +1, -1).
     for (int y_offset = y_min+1; y_offset <= y_max-1; y_offset++) {
-      int wrapped_y_offset = WrapIndex(y_offset, dim);
-      int wrapped_x_min = WrapIndex(x_min, dim);
-      int wrapped_x_max = WrapIndex(x_max, dim);
+      const int wrapped_y_offset = WrapIndex(y_offset, dim);
+      const int wrapped_x_min = WrapIndex(x_min, dim);
+      const int wrapped_x_max = WrapIndex(x_max, dim);
 
       const Point* left_pt = sample_grid[wrapped_y_offset*dim + wrapped_x_min];
       const Point* right_pt = sample_grid[wrapped_y_offset*dim + wrapped_x_max];
@@ -189,13 +188,43 @@ sample_fn GetSamplingFunction(const std::string& algorithm) {
 /*
  * This is kind of like a binary tree shuffle. Easy to think about for 4 points.
  * We can swap points 1 and 2, and we can swap 3 and 4, and we can swap the
- * pairs (1,2) and (3,4), but we can't do anything else. So 2143 is a possible
- * sequence, but 1324 is not. This works because in a PMJ(0,2) sequence, every
- * multiple of a power of two is also a valid PMJ(0,2) sequence, at least if
- * it's constructed using the ShuffleSwap subquadrant selection.
+ * pairs (1,2) and (3,4), but we can't swap 1 with 3 or 4, or 2 with 3 or 4. So
+ * 2143 is a possible sequence, but 1324 is not. This works because in a
+ * PMJ(0,2) sequence, every multiple of a power of two is also a valid PMJ(0,2)
+ * sequence, at least if it's constructed using the ShuffleSwap subquadrant
+ * selection.
  */
 std::vector<const Point*> ShufflePMJ02Sequence(const pmj::Point points[],
                                                const int n) {
+  assert((n & (n - 1)) == 0);  // This function only works for powers of two.
+  std::vector<const Point*> shuffled_points(n);
+  for (int i = 0; i < n; i++) {
+    shuffled_points[i] = &points[i];
+  }
+
+  for (int stride = 2; stride < n; stride <<= 1) {
+    for (int i = 0; i < n; i += stride) {
+      if (UniformRand() < 0.5) {
+        for (int j = 0; j < stride/2; j++) {
+          const Point* pt = shuffled_points[i+j];
+          shuffled_points[i+j] = shuffled_points[i+j+stride/2];
+          shuffled_points[i+j+stride/2] = pt;
+        }
+      }
+    }
+  }
+
+  return shuffled_points;
+}
+
+/*
+ * This is equivalent to the previous function, ShufflePMJ02Sequence, but if you
+ * moved the if (UniformRand() < 0.5) outside the (int i = 0) loop. It doesn't
+ * shuffle as well, but the advantage is that you only need to have a single int
+ * to encode the whole shuffle.
+ */
+std::vector<const Point*> ShufflePMJ02SequenceXor(const pmj::Point points[],
+                                                  const int n) {
   assert((n & (n - 1)) == 0);  // This function only works for powers of two.
   std::vector<const Point*> shuffled_points(n);
   int random_encode = UniformInt(0, n-1);

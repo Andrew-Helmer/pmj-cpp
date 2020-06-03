@@ -65,6 +65,20 @@ inline void UpdateMinDistSq(
   }
 }
 
+inline void UpdateMinDistSqWithPointInCell(const Point& sample,
+                                           const Point* sample_grid[],
+                                           const int x,
+                                           const int y,
+                                           const int dim,
+                                           double* min_dist_sq) {
+  const int wrapped_x = WrapIndex(x, dim);
+  const int wrapped_y = WrapIndex(y, dim);
+  const Point* pt = sample_grid[wrapped_y*dim + wrapped_x];
+  if (pt != nullptr) {
+    UpdateMinDistSq(sample, *pt, min_dist_sq);
+  }
+}
+
 double GetNearestNeighborDistSq(const Point& sample,
                                 const Point* sample_grid[],
                                 const int dim,
@@ -87,47 +101,30 @@ double GetNearestNeighborDistSq(const Point& sample,
   double min_dist_sq = 2.0;
   const double grid_size = 1.0 / dim;
   for (int i = 1; i <= dim/2; i++) {
-    // sqrt(0.5) is the furthest a point can be from the center of its square,
-    // so we add that.
-    double grid_radius = grid_size * (i + 0.7072);
-    double grid_radius_sq = grid_radius * grid_radius;
-
     const int x_min = x_pos - i;
     const int x_max = x_pos + i;
     const int y_min = y_pos - i;
     const int y_max = y_pos + i;
-    // Traverse top and bottom boundaries, including corners.
-    for (int x_offset = x_min; x_offset <= x_max; x_offset++) {
-      int wrapped_x_offset = WrapIndex(x_offset, dim);
-      int wrapped_y_min = WrapIndex(y_min, dim);
-      int wrapped_y_max = WrapIndex(y_max, dim);
 
-      const Point* top_pt = sample_grid[wrapped_y_max*dim + wrapped_x_offset];
-      const Point* bottom_pt =
-          sample_grid[wrapped_y_min*dim + wrapped_x_offset];
-      if (top_pt != nullptr) {
-        UpdateMinDistSq(sample, *top_pt, &min_dist_sq);
-      }
-      if (bottom_pt != nullptr) {
-        UpdateMinDistSq(sample, *bottom_pt, &min_dist_sq);
-      }
-    }
-    // Traverse left and right sides, excluding corners (hence the +1, -1).
-    for (int y_offset = y_min+1; y_offset <= y_max-1; y_offset++) {
-      const int wrapped_y_offset = WrapIndex(y_offset, dim);
-      const int wrapped_x_min = WrapIndex(x_min, dim);
-      const int wrapped_x_max = WrapIndex(x_max, dim);
+    int x = x_min;
+    int y = y_min;
+    for (; x < x_max; x++)  // Scan right over bottom row, ending at corner.
+      UpdateMinDistSqWithPointInCell(
+          sample, sample_grid, x, y, dim, &min_dist_sq);
+    for (; y < y_max; y++)  // Scan up over right column, ending at corner.
+      UpdateMinDistSqWithPointInCell(
+          sample, sample_grid, x, y, dim, &min_dist_sq);
+    for (; x > x_min; x--)  // Scan left over top row.
+      UpdateMinDistSqWithPointInCell(
+          sample, sample_grid, x, y, dim, &min_dist_sq);
+    for (; y > y_min; y--)  // Scan down over left column.
+      UpdateMinDistSqWithPointInCell(
+          sample, sample_grid, x, y, dim, &min_dist_sq);
 
-      const Point* left_pt = sample_grid[wrapped_y_offset*dim + wrapped_x_min];
-      const Point* right_pt = sample_grid[wrapped_y_offset*dim + wrapped_x_max];
-      if (left_pt != nullptr) {
-        UpdateMinDistSq(sample, *left_pt, &min_dist_sq);
-      }
-      if (right_pt != nullptr) {
-        UpdateMinDistSq(sample, *right_pt, &min_dist_sq);
-      }
-    }
-
+    // sqrt(0.5)*grid_size is the furthest a point can be from the center of its
+    // square, so we add that.
+    const double grid_radius = grid_size * (i + 0.7072);
+    const double grid_radius_sq = grid_radius * grid_radius;
     if (min_dist_sq < grid_radius_sq ||
         min_dist_sq < max_min_dist_sq) {
       break;

@@ -33,7 +33,7 @@ The PMJ(0,2) or pmj02 sample sequence has the property that any prefix of the sa
 <img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/pmj02_intervals.svg'>
 </p>
 
-This yields extremely good convergence on test integrals, especially at powers of two for the PMJ(0,2) sequence. Note that both uniform random sampling, also known as "jittered" sampling, and [best-candidate sampling](http://www.pbr-book.org/3ed-2018/Sampling_and_Reconstruction/Maximized_Minimal_Distance_Sampler.html) converge at a rate of approximately N<sup>-.5</sup>. Refer to Christensen et al. for comparison against more sample sequences.
+This yields extremely good convergence on test integrals, especially at powers of two for the PMJ(0,2) sequence. Note that both uniform random sampling and [best-candidate sampling](http://www.pbr-book.org/3ed-2018/Sampling_and_Reconstruction/Maximized_Minimal_Distance_Sampler.html) converge at a rate of approximately N<sup>-.5</sup>. Refer to Christensen et al. for comparison against more sample sequences.
 
 <p align="center">
   <img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/error_analysis.svg'><br>

@@ -33,10 +33,10 @@ This property may be useful to a renderer, because you can compute a hash from t
 According to Christensen et al., in Renderman they store hundreds of 4096-sample tables and index into one of the tables based on a hash of pixel coordinates and bounce.
 
 It's possible to do a somewhat better shuffle, and it's fast, but it's not so memory-efficient. I think you would need to store the whole list of indices. The procedure is:
-1. Iterate over sequential pairs in the sequence. For every pair, randomly decide (with 50% probability) whether to swap it. E.g. randomly swap index 0 with index 1, randomly swap 2 with 3, randomly swap 4 with 5, etc.
+1. Iterate over sequential pairs in the sequence. For every pair, randomly decide (with 50% probability) whether to swap the two values. E.g. randomly swap index 0 with index 1, randomly swap 2 with 3, randomly swap 4 with 5, etc. But do *not* swap 1 with 2, 3 with 4, etc.
 2. Iterate over sequential pairs of two values. For every pair, randomly decide whether to swap *both* values. E.g. randomly swap indices 0,1 with 2,3. Randomly swap 4,5 with 6,7, etc.
 3. Iterate over sequential pairs of 4 values, and randomly swap the 4 values at a time. For instance, randomly swap 0,1,2,3 with 4,5,6,7. 
-4. Continue multiplying each length by two, until you've randomly swapped the first half of the entire sequence with the second half.
+4. Continue multiplying the length of each subsequence by two, randomly swapping pairs of those subsequences, until you've randomly swapped the first half of the entire sequence with the second half.
 
 Both of these methods work because in a balanced PMJ(0,2) sequences, any sub-sequence with a power of two length, and starting at an integer multiple of its length, is itself a balanced progressive (0,2) sequence. So samples 1-4 (indices 0-3) are an (0,2) sequence, as are samples 5-8, 9-13, etc. Samples 1-16 are an (0,2) sequence, as are 17-32, 33-48, etc.
 

@@ -27,9 +27,9 @@ To generate a set of samples you can build the generate_samples tool with *make*
 
 <pre><code>make release</code></pre>
 
-And then run generate_samples, redirecting the output to a file of samples.
+And then run generate_samples.
 
-<pre><code>./generate_samples --n=4096 --algorithm=pmj02 > pmj02_samples.txt</code></pre>
+<pre><code>./generate_samples --n=4096 --algorithm=pmj02 --out=$PWD/pmj02_samples.txt</code></pre>
 
 See the [Code Usage Documentation](docs/code_usage.md) for more information on usage.
 

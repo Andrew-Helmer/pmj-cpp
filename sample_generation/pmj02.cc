@@ -216,8 +216,7 @@ std::unique_ptr<Point[]> GenerateSamples(
     sample_set.SubdivideStrata();
 
     // For every sample, we first generate the diagonally opposite one at the
-    // current grid level. Although we shuffle to visit them in a different
-    // order.
+    // current grid level.
     for (int i = 0; i < n && n+i < num_samples; i++) {
       const Point& sample = sample_set.sample(i);
 
@@ -233,7 +232,7 @@ std::unique_ptr<Point[]> GenerateSamples(
 
     // For the remaining subquadrants, we need to pick what order to sample from
     // them. This will get us the set of subquadrants for the next n samples.
-    auto sub_quad_choices =
+    const std::vector<std::pair<int, int>> sub_quad_choices =
         (*subquad_func)(sample_set.samples(), sample_set.dim());
     for (int i = 0; i < n && 2*n+i < num_samples; i++) {
       sample_set.GenerateNewSample(/*sample_index=*/2*n+i,

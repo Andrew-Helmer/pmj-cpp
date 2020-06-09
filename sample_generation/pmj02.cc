@@ -226,6 +226,8 @@ std::unique_ptr<Point[]> GenerateSamples(
       sample_set.GenerateNewSample(/*sample_index=*/n+i, x_pos ^ 1, y_pos ^ 1);
     }
 
+    if (2*n >= num_samples) break;
+
     // Subdivide the strata, for instance strata of 2x1 and 1x2 will become
     // strata of 4x1, 2x2, and 1x4.
     sample_set.SubdivideStrata();

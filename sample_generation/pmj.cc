@@ -207,6 +207,8 @@ std::unique_ptr<Point[]> GenerateSamples(
       }
     }
 
+    if (2*quadrants >= num_samples) break;
+
     // Now we generate samples in the remaining subquadrants.
     sample_set.SubdivideStrata();
 

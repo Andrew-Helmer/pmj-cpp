@@ -5,14 +5,14 @@
 To generate your own sample sequence, you need to build the generate_samples too. This can be done simply with:
 <pre><code>make release</code></pre>
 
-And then running the generate_samples command-line tool, redirecting the standard output to a file:
-<pre><code>./generate_samples --n=4096 --algorithm=pmj02 > pmj02_samples.txt</code></pre>
+And then running the generate_samples command-line tool:
+<pre><code>./generate_samples --n=4096 --algorithm=pmj02 --out$PWD/pmj02_samples.txt</code></pre>
 
-This outputs the sample sequence into the pmj02_samples.txt file.
+This outputs the sample sequence into a pmj02_samples.txt file in the current working directory.
 
 You can also use [Bazel](https://bazel.build/).
 
-<pre><code>bazel run -c opt generate_samples -- --n=4096 --algorithm=pmj02 > pmj02_samples.txt</code></pre>
+<pre><code>bazel run -c opt generate_samples -- --n=4096 --algorithm=pmj02 --out=$PWD/pmj02_samples.txt</code></pre>
 
 Useful options for the algorithm flag are "pmjbn", "pmj02", and "pmj02bn". See the [sample usage documentation](/docs/sample_usage.md) for the differences.
 

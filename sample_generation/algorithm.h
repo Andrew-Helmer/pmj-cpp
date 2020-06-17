@@ -2,8 +2,7 @@
  * Copyright (C) Andrew Helmer 2020.
  * Licensed under MIT Open-Source License: see LICENSE.
  *
- * Implements a few utility functions useful across the code base, especially
- * random number generation.
+ * A function to convert a string to the appropriate sampling algorithm.
  */
 #ifndef SAMPLE_GENERATION_ALGORITHM_H_
 #define SAMPLE_GENERATION_ALGORITHM_H_

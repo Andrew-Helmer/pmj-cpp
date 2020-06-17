@@ -1,19 +1,19 @@
 package(default_visibility = ["//visibility:public"])
 
-# If you want symbols on a Mac, build with -c dbg and --spawn_strategy=local. 
-# This is annoyingly necessary.
-genrule(
-    name = "sample_generation_dsym",
-    srcs = [":sample_generation"],
-    outs = ["sample_generation.dSYM"],
-    output_to_bindir = True,
-    cmd = "dsymutil $(location :sample_generation) -o $@"
-)
-
 cc_library(
     name = "sample_generation",
     srcs = glob(["*.cc"]),
     hdrs = glob(["*.h"]),
+)
+
+cc_library(
+    name = "algorithm",
+    hdrs = ["algorithm.h"],
+    deps = [
+        ":pj",
+        ":pmj",
+        ":pmj02",
+    ]
 )
 
 cc_library(
@@ -62,9 +62,5 @@ cc_library(
     name = "util",
     srcs = ["util.cc"],
     hdrs = ["util.h"],
-    deps = [
-        "pj",
-        "pmj",
-        "pmj02",
-    ]
+    deps = []
 )

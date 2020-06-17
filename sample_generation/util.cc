@@ -10,13 +10,8 @@
 
 #include <algorithm>
 #include <random>
-#include <unordered_map>
 #include <utility>
 #include <vector>
-
-#include "sample_generation/pj.h"
-#include "sample_generation/pmj.h"
-#include "sample_generation/pmj02.h"
 
 namespace pmj {
 
@@ -158,28 +153,6 @@ Point GetBestCandidateOfSamples(const std::vector<Point>& candidates,
   }
 
   return best_candidate;
-}
-
-sample_fn GetSamplingFunction(const std::string& algorithm) {
-  static const std::unordered_map<std::string, sample_fn> kAlgorithmMap = {
-    {"uniform", &GetUniformRandomSamples},
-    {"pj", &GetProgJitteredSamples},
-    {"pmj", &GetProgMultiJitteredSamples},
-    {"pmjbn", &GetProgMultiJitteredSamplesWithBlueNoise},
-    {"pmj02", &GetPMJ02Samples},
-    {"pmj02bn", &GetPMJ02SamplesWithBlueNoise},
-    /* Experimental/Explicit Algorithms */
-    {"pmj-random", &GetProgMultiJitteredSamplesRandom},
-    {"pmj-oxplowing", &GetProgMultiJitteredSamplesOxPlowing},
-    {"pmj02-oxplowing", &GetProgMultiJitteredSamplesOxPlowing},
-    {"pmj02-no-balance", &GetPMJ02SamplesNoBalance},
-  };
-
-  auto find_iterator = kAlgorithmMap.find(algorithm);
-  if (find_iterator == kAlgorithmMap.end())
-    throw std::invalid_argument(algorithm + " is not a valid algorithm.");
-
-  return find_iterator->second;
 }
 
 /*

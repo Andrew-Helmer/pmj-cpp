@@ -26,10 +26,7 @@
 #include <random>
 #include <utility>
 
-#include "sample_generation/pj.h"
-#include "sample_generation/pmj.h"
-#include "sample_generation/pmj02.h"
-#include "sample_generation/util.h"
+#include "sample_generation/algorithm.h"
 
 using std::string;
 

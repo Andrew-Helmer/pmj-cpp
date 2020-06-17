@@ -33,11 +33,6 @@ Point GetBestCandidateOfSamples(const std::vector<Point>& candidates,
                                 const Point* sample_grid[],
                                 const int dim);
 
-// Given a string like "pmj" or "pmj02bn", returns the function to generate
-// samples from that algorithm.
-typedef std::unique_ptr<pmj::Point[]> (*sample_fn)(int);
-sample_fn GetSamplingFunction(const std::string& algorithm);
-
 // Given a sequence of PMJ02 points, this will shuffle them, while the resulting
 // shuffle will still be a progressive (0,2) sequence. We don't actually use it
 // anywhere, this is just to show how easy it is.

@@ -22,9 +22,7 @@
 #include "absl/strings/str_split.h"
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
-#include "sample_generation/pj.h"
-#include "sample_generation/pmj.h"
-#include "sample_generation/pmj02.h"
+#include "sample_generation/algorithm.h"
 
 ABSL_FLAG(std::string, distr, "disc,gaussian,bilinear",
     "Which distributions to use for the error analysis.");

@@ -17,7 +17,7 @@
 #include "absl/strings/str_split.h"
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
-#include "sample_generation/util.h"
+#include "sample_generation/algorithm.h"
 
 ABSL_FLAG(int, n, 65536,
     "The number of samples to generate in each run.");

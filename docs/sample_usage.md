@@ -18,9 +18,11 @@ You can also generate your own sequences, using the generate_samples utility. Se
 
 ## References
 
-You may want to consult the Discussion section (section 11) of [Christensen et al](https://graphics.pixar.com/library/ProgressiveMultiJitteredSampling/paper.pdf) for some information of how these samples are used in RenderMan.
+You may want to consult the Discussion section (section 11) of [Christensen et al. (2018)](https://graphics.pixar.com/library/ProgressiveMultiJitteredSampling/paper.pdf) for some information of how these samples are used in RenderMan.
 
 Another good reference might be the [(0,2) Sequence](http://www.pbr-book.org/3ed-2018/Sampling_and_Reconstruction/(0,_2)-Sequence_Sampler.html) section of PBRT.
+
+Finally, [Efficient Multidimensional Sampling (2002) by Kollig & Keller](https://www.uni-kl.de/AG-Heinrich/EMS.pdf) is highly applicable.
 
 ## Shuffling
 
@@ -45,6 +47,10 @@ It's possible to do a better randomized shuffle, but the shuffle can't as easily
 Both of these methods work because in a balanced PMJ(0,2) sequences, any sub-sequence with a power of two length, and starting at an integer multiple of its length, is itself a balanced progressive (0,2) sequence. So samples 1-4 (indices 0-3) are an (0,2) sequence, as are samples 5-8, 9-13, etc. Samples 1-16 are an (0,2) sequence, as are 17-32, 33-48, etc.
 
 <sub>\* "Balanced" here refers to the property of sub-sequence stratification. When generating the PMJ(0,2) samples, after generating N samples, where N is an odd power of two, the next N/2 samples, and the N/2 samples after that, should each be (0,2) sequences themselves. Refer to Christensen et al. for more information.</sub>
+
+## Scrambling
+
+In Kollig & Keller (2002), they explain Owen Scrambling and Random Digit Scrambling, I think these techniques are also applicable to PMJ(0,2) sequences to further decorrelate samples. They are pretty much the same as the shuffling algorithms described above, except they operate on the values of the points rather than on the sequence indices.
 
 ## (Do not use) Cranley-Patterson Rotations
 

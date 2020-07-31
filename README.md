@@ -35,7 +35,7 @@ See the [Code Usage Documentation](docs/code_usage.md) for more information on u
 
 ## Sequence Properties and Convergence
 
-The PMJ(0,2) or pmj02 sample sequence has the property that any prefix of the samples are stratified on every elementary (0,2) interval.
+The PMJ(0,2) or pmj02 sample sequence has the property that any prefix of the samples are stratified on every elementary base-2 2D elementary interval. For example, for 16 samples, these sequences are always stratified on the 16x1, 8x2, 4x4, 2x8, and 1x16 grids.
 
 <p align="center">
 <img src='https://github.com/Andrew-Helmer/pmj-cpp/blob/master/docs/pmj02_intervals.svg'>
